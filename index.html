@@ -1928,8 +1928,9 @@ window.addEventListener("beforeunload",e=>{if(BUSY)return;
    scenarios baked into this file remain the fallback if the service is
    unreachable or paused. */
 const SB={on:false,url:SUPABASE_URL,key:SUPABASE_KEY,row:SUPABASE_ROW,
-  token:null,email:null,stamp:null,force:false,note:"",checked:false};
-const TOKEN_KEY="loma-sb-token";
+  token:null,refresh:null,exp:0,email:null,stamp:null,force:false,note:"",checked:false};
+const TOKEN_KEY="loma-sb-token";   /* older builds stored a bare access token here */
+const SESS_KEY="loma-sb-session";
 const sbConfigured=()=>!!(SB.url&&SB.key&&/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(SB.url));
 /* Publishable keys go on the apikey header ONLY — they are not JWTs, and the
    gateway rejects one sent as a Bearer token. Authorization carries a real
@@ -1945,11 +1946,14 @@ async function sbRead(){
   return (await r.json())[0]||null;
 }
 async function sbWrite(doc){
-  const r=await fetch(SB.url+"/rest/v1/plan?id=eq."+encodeURIComponent(SB.row),
+  const send=()=>fetch(SB.url+"/rest/v1/plan?id=eq."+encodeURIComponent(SB.row),
     {method:"PATCH",headers:Object.assign(sbHead(SB.token),{Prefer:"return=representation"}),
      body:JSON.stringify({doc:doc,updated_at:new Date().toISOString()})});
+  let r=await send();
+  /* an expired access token is recoverable without another email */
+  if((r.status===401||r.status===403)&&await sbRefresh())r=await send();
   if(!r.ok){const t=(await r.text()).slice(0,160);
-    throw new Error(r.status===401||r.status===403?"not signed in, or your sign-in expired":r.status+" "+t);}
+    throw new Error(r.status===401||r.status===403?"your sign-in expired and couldn't be renewed — sign in again":r.status+" "+t);}
   return (await r.json())[0];
 }
 async function sbWhoAmI(tok){
@@ -1964,21 +1968,66 @@ async function sbSendLink(email){
      body:JSON.stringify({email:email,create_user:true})});
   if(!r.ok)throw new Error((await r.text()).slice(0,160));
 }
-function sbGrabTokenFromHash(){
-  const m=/access_token=([^&]+)/.exec(location.hash||"");
-  if(!m)return null;
-  const tok=decodeURIComponent(m[1]);
-  try{localStorage.setItem(TOKEN_KEY,tok);}catch(e){}
-  history.replaceState(null,"",location.pathname+location.search); /* keep the token out of the address bar */
-  return tok;
+/* A Supabase access token lasts one hour. The magic-link redirect also carries a
+   refresh token, which does not expire — keeping it is the difference between
+   signing in once and asking for a new email every hour. The built-in mailer
+   allows only two of those an hour, so this is not a small detail. */
+function sbSaveSession(s){
+  SB.token=s.access;SB.refresh=s.refresh||SB.refresh;SB.exp=s.exp||0;
+  try{localStorage.setItem(SESS_KEY,JSON.stringify({access:SB.token,refresh:SB.refresh,exp:SB.exp}));
+    localStorage.removeItem(TOKEN_KEY);}catch(e){}
 }
-function sbStoredToken(){try{return localStorage.getItem(TOKEN_KEY)||null;}catch(e){return null;}}
-function sbSignOut(){SB.token=null;SB.email=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}
+function sbLoadSession(){
+  try{
+    const raw=localStorage.getItem(SESS_KEY);
+    if(raw){const s=JSON.parse(raw);if(s&&s.access)return s;}
+    const old=localStorage.getItem(TOKEN_KEY);   /* upgrade an older build's stored token */
+    if(old)return {access:old,refresh:null,exp:0};
+  }catch(e){}
+  return null;
+}
+function sbClearSession(){SB.token=null;SB.refresh=null;SB.exp=0;SB.email=null;
+  try{localStorage.removeItem(SESS_KEY);localStorage.removeItem(TOKEN_KEY);}catch(e){}}
+function sbGrabTokenFromHash(){
+  const h=location.hash||"";
+  const field=k=>{const m=new RegExp("[#&]"+k+"=([^&]*)").exec(h);return m?decodeURIComponent(m[1]):null;};
+  const access=field("access_token");
+  if(!access)return null;
+  const secs=parseInt(field("expires_in")||"3600",10);
+  const s={access:access,refresh:field("refresh_token"),
+    exp:Date.now()+(isFinite(secs)?secs:3600)*1000};
+  sbSaveSession(s);
+  history.replaceState(null,"",location.pathname+location.search); /* keep the token out of the address bar */
+  return s;
+}
+async function sbRefresh(){
+  if(!SB.refresh)return false;
+  try{
+    const r=await fetch(SB.url+"/auth/v1/token?grant_type=refresh_token",
+      {method:"POST",headers:{apikey:SB.key,"Content-Type":"application/json"},
+       body:JSON.stringify({refresh_token:SB.refresh})});
+    if(!r.ok)return false;
+    const j=await r.json();
+    if(!j||!j.access_token)return false;
+    sbSaveSession({access:j.access_token,refresh:j.refresh_token||SB.refresh,
+      exp:Date.now()+((j.expires_in||3600)*1000)});
+    if(j.user&&j.user.email)SB.email=j.user.email;
+    return true;
+  }catch(e){return false;}
+}
+/* renew a little before the hour is up, rather than after a save has failed */
+async function sbEnsureFresh(){
+  if(!SB.token)return false;
+  if(SB.exp&&Date.now()<SB.exp-120000)return true;
+  return await sbRefresh();
+}
+function sbSignOut(){sbClearSession();
   hint("Signed out. You can still explore and use plan files.","ok");render();}
 
 async function sbBoot(){
   if(!sbConfigured()){SB.note="Shared saving is switched off in this copy.";SB.checked=true;return;}
-  const tok=sbGrabTokenFromHash()||sbStoredToken();
+  const sess=sbGrabTokenFromHash()||sbLoadSession();
+  if(sess){SB.token=sess.access;SB.refresh=sess.refresh||null;SB.exp=sess.exp||0;}
   try{
     const row=await sbRead();
     SB.on=true;
@@ -1991,10 +2040,12 @@ async function sbBoot(){
     SB.note="Can't reach the shared plan ("+((e&&e.message)||e)+"), so this is the copy built into this page. "+
       "Everything works; saves stay on your machine. (A free Supabase project pauses after about a week idle — resuming it in the dashboard fixes this.)";
   }
-  if(tok&&SB.on){
-    const who=await sbWhoAmI(tok);
-    if(who){SB.token=tok;SB.email=who;}
-    else{try{localStorage.removeItem(TOKEN_KEY);}catch(e){}}
+  if(SB.token&&SB.on){
+    if(SB.exp&&Date.now()>=SB.exp-120000)await sbRefresh();
+    let who=await sbWhoAmI(SB.token);
+    /* one expired hour is not a reason to make someone request another email */
+    if(!who&&await sbRefresh())who=await sbWhoAmI(SB.token);
+    if(who)SB.email=who; else sbClearSession();
   }
   SB.checked=true;
 }
@@ -2002,6 +2053,7 @@ async function sbBoot(){
 async function sbPublish(mutate,nextView){
   const next=clone(DOC);mutate(next);next.v=2;next.savedAt=new Date().toISOString();
   BUSY=true;ERRMSG="";paint();
+  await sbEnsureFresh();
   try{
     const cur=await sbRead();
     if(cur&&SB.stamp&&cur.updated_at!==SB.stamp&&!SB.force){
@@ -2115,13 +2167,26 @@ document.getElementById("planfile").onchange=async e=>{
       (READONLY?". Nothing here is saved back.":". Press Save to keep it."),"ok");
   }catch(err){hint("That file isn't a plan file ("+((err&&err.message)||"unreadable")+").","bad");}
 };
+let SENDWAIT=0;
 document.getElementById("sbsend").onclick=async()=>{
   const el=document.getElementById("sbemail"),email=(el.value||"").trim();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){hint("Enter a valid email address first.","bad");el.focus();return;}
+  /* Supabase allows one link a minute per address and two emails an hour in total.
+     Spending that quota on double-clicks is the easiest way to lock yourself out. */
+  if(Date.now()<SENDWAIT){
+    hint("A link was just sent. Supabase allows one a minute — wait "+
+      Math.ceil((SENDWAIT-Date.now())/1000)+"s, and check your inbox meanwhile.","bad");return;}
   const btn=document.getElementById("sbsend");btn.disabled=true;btn.textContent="Sending…";
-  try{await sbSendLink(email);
-    hint("Check "+esc(email)+" — click the link in that email and you'll come back here signed in.","ok");}
-  catch(e){hint("Couldn't send the link: "+esc((e&&e.message)||e),"bad");}
+  try{await sbSendLink(email);SENDWAIT=Date.now()+60000;
+    hint("Check "+esc(email)+" — click the link in that email and you'll come back here signed in. "+
+      "You'll stay signed in on this browser from then on; it won't keep emailing you.","ok");}
+  catch(e){
+    const msg=(e&&e.message)||String(e);
+    if(/rate.?limit|429/i.test(msg))
+      hint("<b>Supabase's built-in mailer allows only two sign-in emails an hour</b>, and that's used up. "+
+        "If an earlier link is still unopened in your inbox it will work — otherwise wait an hour. "+
+        "Connecting your own mail server in Supabase removes this cap.","bad");
+    else hint("Couldn't send the link: "+esc(msg),"bad");}
   btn.disabled=false;btn.textContent="Email me a sign-in link";
 };
 document.getElementById("sbsignout").onclick=sbSignOut;
@@ -2434,7 +2499,7 @@ document.getElementById("foot").innerHTML=
    ends after FY2030 — less $175k ongoing; PPEL grown at the slider less $20k) and bank the rest forward.
    <b>Estimates</b> tagged <span style="color:var(--boost);font-weight:700">est</span> are timeline TBDs (±30–50%).
    Confirm eligibility and any dollar assumption with the business manager before decisions are made.
-   <div class="stamp">Planner build <b>2026-09-01c</b></div>`;
+   <div class="stamp">Planner build <b>2026-09-01d</b></div>`;
 
 syncLevers();
 render();
