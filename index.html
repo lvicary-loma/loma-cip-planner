@@ -1,0 +1,2446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Lo-Ma Capital Plan Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style id="app-style">
+  :root{
+    --paper:#FAFAF6; --panel:#FFFFFF; --ink:#1B1A24; --muted:#6A6875;
+    --line:#E4E1D8; --line2:#D6D2C6;
+    --save:#4F2170; --ppel:#1F6F6F; --vppel:#8A5FBF; --grants:#9A7400; --bondp:#2C5F8A;
+    --boost:#C97A16; --camp:#B23A3A;
+    --ok:#2E7D46; --warn:#B23A3A; --bank:#3A6B8A; --gold:#C9A227;
+    --disp:'Barlow Semi Condensed','Arial Narrow',system-ui,sans-serif;
+    --body:'Barlow',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  /* author display rules outrank the UA's [hidden]{display:none}; without this a
+     hidden flex/grid row stays on screen */
+  [hidden]{display:none!important}
+  html{background:var(--paper)}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased}
+  :focus-visible{outline:2px solid var(--save);outline-offset:2px}
+  .wrap{max-width:1720px;margin:0 auto;padding:22px 22px 60px}
+  h1,h2,h3,.num{font-family:var(--disp)}
+  .num{font-variant-numeric:tabular-nums}
+  header.top{border-bottom:3px solid var(--ink);padding-bottom:14px;margin-bottom:18px}
+  .kicker{font-family:var(--disp);text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--save);font-weight:700}
+  header.top h1{margin:.1em 0 .15em;font-size:30px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+  header.top p{margin:0;color:var(--muted);max-width:78ch;font-size:14px}
+  .layout{display:grid;grid-template-columns:296px minmax(0,1fr);gap:20px;align-items:start}
+  .rail{position:sticky;top:16px;display:flex;flex-direction:column;gap:16px;max-height:calc(100vh - 32px);overflow-y:auto;padding-right:2px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:15px}
+  .card h2{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+  .card h2 .h2side{float:right;text-transform:none;letter-spacing:0;font-weight:600;font-size:12px;color:var(--save);cursor:pointer;background:none;border:none;padding:0;font-family:var(--body)}
+  .card h2 .h2side:hover{text-decoration:underline}
+  .verdict{border-width:2px;border-radius:10px;padding:15px 15px 13px}
+  .verdict.short{border-color:var(--boost);background:#FDF6EC}
+  .verdict.ok{border-color:var(--ok);background:#F0F7F1}
+  .verdict .label{font-family:var(--disp);text-transform:uppercase;letter-spacing:.1em;font-size:12px;font-weight:700}
+  .verdict.short .label{color:var(--boost)} .verdict.ok .label{color:var(--ok)}
+  .verdict .big{font-family:var(--disp);font-size:34px;font-weight:700;line-height:1;margin:6px 0 4px;font-variant-numeric:tabular-nums}
+  .verdict .sub{font-size:13px;color:var(--ink)}
+  .lever{margin-bottom:14px}
+  .lever:last-child{margin-bottom:0}
+  .lever .lv-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+  .lever .lv-name{font-weight:600;font-size:14px}
+  .lever .lv-val{font-family:var(--disp);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;color:var(--save)}
+  input[type=range]{width:100%;accent-color:var(--save);margin:0}
+  .lv-note{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.3}
+  .toggle{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+  .toggle input{position:absolute;opacity:0;pointer-events:none}
+  .tk{width:42px;height:23px;border-radius:20px;background:var(--line2);position:relative;transition:background .15s;flex:none}
+  .tk::after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .toggle input:checked + .tk{background:var(--vppel)}
+  .toggle input:checked + .tk::after{transform:translateX(19px)}
+  .toggle input:focus-visible + .tk{outline:2px solid var(--save);outline-offset:2px}
+  .legend{display:flex;flex-direction:column;gap:6px}
+  .lg{display:flex;align-items:center;gap:8px;font-size:13px}
+  .sw{width:13px;height:13px;border-radius:3px;flex:none}
+  .lg .amt{margin-left:auto;font-family:var(--disp);font-variant-numeric:tabular-nums;font-weight:600}
+  .btn{font-family:var(--disp);font-weight:600;font-size:13px;letter-spacing:.03em;border:1px solid var(--line2);background:#fff;color:var(--ink);border-radius:7px;padding:8px 12px;cursor:pointer;text-transform:uppercase}
+  .btn:hover:not(:disabled){background:#F3F1EA}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn.primary{background:var(--save);border-color:var(--save);color:#fff}
+  .btn.primary:hover:not(:disabled){background:#3E1959}
+  .btn.sm{font-size:11.5px;padding:5px 7px}
+  .btn.danger{color:var(--warn);border-color:#E8C9C9}
+  .btn.danger:hover:not(:disabled){background:#FBF0F0}
+  .btnrow{display:flex;gap:7px}
+  .btnrow .btn{flex:1;padding:8px 6px}
+  .btnrow.tight{margin-top:7px}
+  /* --- scenarios --- */
+  .sclist{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+  .sc{display:flex;align-items:center;gap:7px;width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:7px;padding:7px 9px;cursor:pointer;font-family:var(--body);font-size:13.5px;color:var(--ink)}
+  .sc:hover{background:#F7F5EE}
+  .sc.on{border-color:var(--save);background:#F8F4FC;box-shadow:inset 3px 0 0 var(--save)}
+  .sc .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sc .home{font-size:11px;color:var(--save);flex:none}
+  .sc .gap{margin-left:auto;font-family:var(--disp);font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;color:var(--boost);flex:none}
+  .sc .gap.ok{color:var(--ok)}
+  .sc.blank{color:var(--muted);font-style:italic}
+  .scnone{font-size:12.5px;color:var(--muted);margin-bottom:10px;line-height:1.35}
+  .namer{display:flex;gap:6px;margin-bottom:9px}
+  .namer input{flex:1;min-width:0;font-family:var(--body);font-size:13px;border:1px solid var(--save);border-radius:6px;padding:6px 8px}
+  .confirm{border:1px solid var(--warn);background:#FBF0F0;border-radius:7px;padding:9px 10px;font-size:12.5px;margin-bottom:9px;line-height:1.35}
+  .stat{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;line-height:1.35;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:11px}
+  .stat .dot{width:9px;height:9px;border-radius:50%;flex:none;margin-top:4px;background:var(--ok)}
+  .stat b{display:block;color:var(--ink);font-weight:600;font-size:13px}
+  .saver.is-dirty .stat .dot{background:var(--boost)} .saver.is-dirty .stat b{color:var(--boost)}
+  .saver.is-ro .stat .dot{background:var(--line2)}
+  .saver.is-err .stat .dot{background:var(--warn)} .saver.is-err .stat b{color:var(--warn)}
+  .sbbox{margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
+  .sbstat{font-size:12px;color:var(--muted);line-height:1.4}
+  .sbstat b{display:block;color:var(--ink);font-weight:600;font-size:13px}
+  .sbstat.ok b{color:var(--ok)} .sbstat.bad{color:var(--boost)}
+  .sbbox input{flex:1;min-width:0;font-family:var(--body);font-size:12.5px;border:1px solid var(--line2);
+    border-radius:6px;padding:6px 8px}
+  .sbbox .btnrow{margin-top:7px}
+  .portbox{margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
+  .porthint{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:7px}
+  .porthint.ok{color:var(--ok);font-weight:600}
+  .porthint.bad{color:var(--warn);font-weight:600}
+  .landnote{border:1px solid var(--boost);background:#FDF6EC;border-radius:7px;padding:9px 10px;
+    font-size:12.5px;line-height:1.35;margin-top:9px}
+  .diagbox{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+  .diagbox summary{font-size:11.5px;color:var(--muted);cursor:pointer;list-style:none;font-family:var(--disp);
+    text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+  .diagbox summary::-webkit-details-marker{display:none}
+  .diagbox summary::before{content:"▸ "}
+  .diagbox[open] summary::before{content:"▾ "}
+  .diagbox #diag{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:6px;word-break:break-word}
+  .diagbox #diag b{display:block;color:var(--ink);font-weight:600}
+  .restore{border:1px solid var(--boost);background:#FDF6EC;border-radius:8px;padding:10px 11px;font-size:12.5px;line-height:1.35}
+  .restore b{display:block;font-size:13px;margin-bottom:3px}
+  .restore .btnrow{margin-top:8px}
+  /* --- compare --- */
+  .compare{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:14px;overflow-x:auto}
+  .compare table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  .compare th,.compare td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  .compare th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:11px;color:var(--muted);font-weight:700}
+  .compare th:first-child,.compare td:first-child{text-align:left}
+  .compare tbody tr:last-child td{border-bottom:none}
+  .compare tr.on td{background:#F8F4FC}
+  .compare tr.wip td{background:#FDF6EC}
+  .compare td.n{font-family:var(--disp);font-variant-numeric:tabular-nums;font-weight:600}
+  .compare td.gap{color:var(--boost);font-weight:700}
+  .compare td.gap.ok{color:var(--ok)}
+  .compare .cname{font-weight:600}
+  .compare .tag{font-family:var(--disp);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--save);color:var(--save);border-radius:3px;padding:0 4px;margin-left:6px}
+  /* --- year columns --- */
+  .yearsbar{display:flex;align-items:baseline;gap:12px;margin-bottom:9px;font-size:12.5px;color:var(--muted)}
+  .yearsbar .sp{margin-left:auto}
+  .linkbtn{background:none;border:none;color:var(--save);font-weight:600;font-size:12.5px;cursor:pointer;padding:0;font-family:var(--body)}
+  .linkbtn:hover{text-decoration:underline}
+  .years{display:flex;gap:11px;overflow-x:auto;padding-bottom:8px;align-items:stretch}
+  .year{flex:1 1 246px;min-width:238px;background:var(--panel);border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;min-height:210px}
+  .year.dragover{outline:2px dashed var(--save);outline-offset:-4px;background:#FBF8FF}
+  .year.collapsed{flex:0 0 46px;min-width:46px;background:#F6F4ED;border-style:dashed;border-color:var(--line2)}
+  .ycol{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;background:none;border:none;cursor:pointer;padding:12px 0;width:100%;color:var(--muted)}
+  .ycol span{writing-mode:vertical-rl;transform:rotate(180deg)}
+  .ycol .vfy{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.02em;color:var(--ink)}
+  .ycol .vbank{font-family:var(--disp);font-variant-numeric:tabular-nums;font-size:11.5px;color:var(--bank)}
+  .ycol:hover .vfy{color:var(--save)}
+  .yhead{padding:11px 12px 9px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:8px}
+  .yhead .fy{font-family:var(--disp);font-weight:700;font-size:19px;letter-spacing:-.01em}
+  .yhead .yr{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .yhead .ytot{font-family:var(--disp);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;margin-left:auto}
+  .yhead .fold{background:none;border:none;color:var(--line2);cursor:pointer;font-size:15px;line-height:1;padding:0 0 0 4px}
+  .yhead .fold:hover{color:var(--save)}
+  .plist{padding:9px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .empty{color:var(--line2);font-family:var(--disp);text-transform:uppercase;letter-spacing:.1em;font-size:12px;text-align:center;padding:18px 6px}
+  .proj{border:1px solid var(--line);border-left-width:4px;border-radius:7px;padding:8px 9px;background:#fff}
+  .ptop{display:flex;align-items:center;gap:4px}
+  .grip{color:var(--line2);font-size:13px;line-height:1;cursor:grab;flex:none;padding:2px 1px;user-select:none}
+  .grip:active{cursor:grabbing}
+  .grip[draggable="false"]{cursor:default;opacity:.5}
+  .proj .pname{flex:1;min-width:0;font-family:var(--body);font-weight:600;font-size:13.5px;line-height:1.25;
+    color:var(--ink);border:1px solid transparent;border-radius:4px;padding:2px 4px;background:transparent;
+    overflow-wrap:anywhere}
+  .proj .pname[contenteditable="true"]:hover{border-color:var(--line2);background:#F7F5EE}
+  .proj .pname[contenteditable="true"]:focus{outline:none;border-color:var(--save);background:#fff}
+  .pdel{flex:none;border:1px solid transparent;background:none;color:var(--line2);cursor:pointer;font-size:14px;
+    line-height:1;padding:2px 4px;border-radius:4px;font-family:var(--disp)}
+  .pdel:hover{color:var(--warn);border-color:#E8C9C9}
+  .pdel.armed{color:#fff;background:var(--warn);border-color:var(--warn);font-size:10px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.04em;padding:3px 5px}
+  .ptags{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:3px 0 5px 16px}
+  .pri{font-family:var(--disp);font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    border-radius:3px;padding:1px 4px;border:1px solid currentColor}
+  .p-High{color:var(--camp)} .p-Med{color:var(--muted)} .p-Low{color:var(--line2)} .p-10yr{color:var(--bank)}
+  .phn.cus{color:var(--bank);background:#E8F0F5}
+  .newproj{margin-top:2px;border:1px dashed var(--line2);background:none;color:var(--save);border-radius:7px;
+    padding:7px 8px;font-family:var(--disp);font-weight:600;font-size:11.5px;letter-spacing:.04em;
+    text-transform:uppercase;cursor:pointer;width:100%}
+  .newproj:hover{background:#F8F4FC;border-color:var(--save)}
+  .saver.is-locked{border-color:var(--bank);box-shadow:inset 3px 0 0 var(--bank)}
+  .saver.is-locked .stat .dot{background:var(--bank)}
+  .saver.is-locked .stat b{color:var(--bank)}
+  .sc .lockmark{font-size:11px;color:var(--bank);flex:none}
+  .proj .est{font-family:var(--disp);font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--boost);border:1px solid var(--boost);border-radius:3px;padding:0 3px;margin-left:5px;vertical-align:middle;text-transform:uppercase}
+  .proj .phn{font-family:var(--disp);font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--save);background:#F1E9F7;border-radius:3px;padding:1px 4px;margin-left:5px;vertical-align:middle;text-transform:uppercase}
+  .prow{display:flex;align-items:center;gap:6px}
+  .cost{font-family:var(--disp);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;width:94px;border:1px solid transparent;border-radius:4px;padding:1px 3px;background:transparent}
+  .cost:hover{border-color:var(--line2);background:#F7F5EE}
+  .cost:focus{outline:none;border-color:var(--save);background:#fff}
+  .esc{font-size:10.5px;color:var(--bank);margin-top:2px;font-variant-numeric:tabular-nums}
+  .mv{margin-left:auto;display:flex;gap:3px}
+  .mv button{width:22px;height:22px;border:1px solid var(--line2);background:#fff;border-radius:5px;cursor:pointer;font-size:13px;line-height:1;color:var(--muted);padding:0}
+  .mv button:hover:not(:disabled){background:var(--save);color:#fff;border-color:var(--save)}
+  .mv button:disabled{opacity:.3;cursor:default}
+  .funding{margin-top:7px;border-top:1px dashed var(--line);padding-top:6px}
+  .split{display:flex;align-items:center;gap:4px;margin-bottom:4px}
+  select.fb{font-family:var(--body);font-size:11.5px;font-weight:600;border:1px solid var(--line2);border-radius:5px;padding:3px 3px;flex:1;min-width:0;cursor:pointer;color:#fff}
+  input.fp{width:38px;font-family:var(--disp);font-variant-numeric:tabular-nums;font-weight:700;font-size:12px;text-align:right;border:1px solid var(--line2);border-radius:4px;padding:2px 3px}
+  .split .pctsign{font-size:10px;color:var(--muted);margin-left:-2px}
+  .split .sdollar{font-family:var(--disp);font-variant-numeric:tabular-nums;font-size:11px;color:var(--muted);width:52px;text-align:right}
+  .split .warn{color:var(--warn);font-size:12px;cursor:help}
+  .split .rm{width:18px;height:18px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0}
+  .split .rm:hover{color:var(--warn)}
+  .plinks{display:flex;gap:10px;align-items:center;margin-top:1px}
+  .addsplit{font-size:11px;color:var(--save);background:none;border:none;cursor:pointer;padding:2px 0;font-weight:600}
+  .addsplit:hover:not(:disabled){text-decoration:underline}
+  .addsplit:disabled{color:var(--line2);cursor:default;text-decoration:none}
+  .addsplit.ph{color:var(--bank)}
+  .addsplit.drop{color:var(--warn)}
+  .rec{font-size:10.5px;color:var(--muted);margin-top:2px}
+  .rec b{color:var(--ink);font-weight:600}
+  .meters{border-top:1px solid var(--line);padding:9px 10px 10px;background:#FCFBF8;border-radius:0 0 10px 10px}
+  .mt{margin-bottom:7px}
+  .mt:last-child{margin-bottom:0}
+  .mt .mrow{display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px}
+  .mt .mname{font-weight:600}
+  .mt .mfig{font-variant-numeric:tabular-nums;color:var(--muted)}
+  .bar{height:7px;border-radius:4px;background:var(--line);overflow:hidden;position:relative}
+  .bar > span{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+  .bar.over > span{background:var(--warn)!important}
+  .carry{font-size:10.5px;color:var(--bank);margin-top:2px;font-variant-numeric:tabular-nums}
+  .ext{font-size:11px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line2);font-variant-numeric:tabular-nums}
+  .ext b{color:var(--camp)}
+  .foot{margin-top:22px;font-size:12px;color:var(--muted);line-height:1.5;max-width:100ch}
+  .foot b{color:var(--ink)}
+  @media (max-width:1100px){.layout{grid-template-columns:1fr}.rail{position:static;max-height:none;overflow:visible}.year{flex:0 0 250px}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<script type="application/json" id="planner-state">
+{
+ "v": 2,
+ "scenarios": [
+  {
+   "id": "orig",
+   "name": "District original (spreadsheet)",
+   "locked": true,
+   "savedAt": "2026-08-24T18:50:22Z",
+   "levers": null,
+   "projects": [
+    {
+     "id": 16,
+     "del": true
+    },
+    {
+     "id": 1,
+     "phases": [
+      {
+       "cost": 700000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "bondp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 2,
+     "phases": [
+      {
+       "cost": 145000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "phases": [
+      {
+       "cost": 5000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "grants",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "phases": [
+      {
+       "cost": 60000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "phases": [
+      {
+       "cost": 110000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "phases": [
+      {
+       "cost": 650000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "phases": [
+      {
+       "cost": 15000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "boost",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "phases": [
+      {
+       "cost": 125000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "phases": [
+      {
+       "cost": 160000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "phases": [
+      {
+       "cost": 67500,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 67500,
+       "year": 3,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "phases": [
+      {
+       "cost": 1500000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "phases": [
+      {
+       "cost": 500000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "ppel",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "phases": [
+      {
+       "cost": 200000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "phases": [
+      {
+       "cost": 200000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "phases": [
+      {
+       "cost": 105000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "phases": [
+      {
+       "cost": 50000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "boost",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 18,
+     "phases": [
+      {
+       "cost": 0,
+       "year": 9,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 19,
+     "phases": [
+      {
+       "cost": 0,
+       "year": 9,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 20,
+     "phases": [
+      {
+       "cost": 0,
+       "year": 9,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "roof",
+   "name": "Original + roof program",
+   "savedAt": "2026-08-24T18:50:22Z",
+   "levers": null,
+   "projects": [
+    {
+     "id": 1,
+     "phases": [
+      {
+       "cost": 700000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "bondp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 2,
+     "phases": [
+      {
+       "cost": 145000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "phases": [
+      {
+       "cost": 5000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "grants",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 4,
+     "phases": [
+      {
+       "cost": 60000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "phases": [
+      {
+       "cost": 110000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "phases": [
+      {
+       "cost": 650000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "phases": [
+      {
+       "cost": 15000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "boost",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "phases": [
+      {
+       "cost": 125000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "phases": [
+      {
+       "cost": 160000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "phases": [
+      {
+       "cost": 67500,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 67500,
+       "year": 3,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "phases": [
+      {
+       "cost": 1500000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "phases": [
+      {
+       "cost": 500000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "ppel",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "phases": [
+      {
+       "cost": 200000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "phases": [
+      {
+       "cost": 200000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "phases": [
+      {
+       "cost": 105000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "phases": [
+      {
+       "cost": 50000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "boost",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 18,
+     "phases": [
+      {
+       "cost": 0,
+       "year": 9,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 19,
+     "phases": [
+      {
+       "cost": 0,
+       "year": 9,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 20,
+     "phases": [
+      {
+       "cost": 0,
+       "year": 9,
+       "funding": [
+        {
+         "b": "camp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "phases": [
+      {
+       "cost": 160000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 370000,
+       "year": 2,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 270000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "nobond",
+   "name": "No-bond, ten-year",
+   "savedAt": "2026-08-31T20:03:46Z",
+   "levers": {
+    "vppel": false,
+    "pg": 0.04,
+    "gy": 0.75,
+    "sg": 0,
+    "infl": 0
+   },
+   "projects": [
+    {
+     "id": 4,
+     "del": true
+    },
+    {
+     "id": 18,
+     "del": true
+    },
+    {
+     "id": 19,
+     "del": true
+    },
+    {
+     "id": 20,
+     "del": true
+    },
+    {
+     "id": 1,
+     "phases": [
+      {
+       "cost": 700000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "bondp",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 2,
+     "phases": [
+      {
+       "cost": 25000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 3,
+     "phases": [
+      {
+       "cost": 25000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "grants",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 5,
+     "phases": [
+      {
+       "cost": 40000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 6,
+     "phases": [
+      {
+       "cost": 62000,
+       "year": 0,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 175000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 150000,
+       "year": 2,
+       "funding": [
+        {
+         "b": "grants",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 150000,
+       "year": 3,
+       "funding": [
+        {
+         "b": "grants",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 7,
+     "phases": [
+      {
+       "cost": 15000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "boost",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 8,
+     "phases": [
+      {
+       "cost": 125000,
+       "year": 6,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 9,
+     "phases": [
+      {
+       "cost": 25000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 17,
+     "phases": [
+      {
+       "cost": 67500,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 67500,
+       "year": 3,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 10,
+     "phases": [
+      {
+       "cost": 1500000,
+       "year": 9,
+       "funding": [
+        {
+         "b": "save",
+         "p": 75
+        },
+        {
+         "b": "grants",
+         "p": 25
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 11,
+     "phases": [
+      {
+       "cost": 250000,
+       "year": 6,
+       "funding": [
+        {
+         "b": "ppel",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 250000,
+       "year": 7,
+       "funding": [
+        {
+         "b": "ppel",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 12,
+     "phases": [
+      {
+       "cost": 200000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 13,
+     "phases": [
+      {
+       "cost": 200000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 14,
+     "phases": [
+      {
+       "cost": 30000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 15,
+     "phases": [
+      {
+       "cost": 50000,
+       "year": 4,
+       "funding": [
+        {
+         "b": "boost",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 16,
+     "phases": [
+      {
+       "cost": 65000,
+       "year": 3,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 194000,
+       "year": 5,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      },
+      {
+       "cost": 713000,
+       "year": 8,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 1001,
+     "phases": [
+      {
+       "cost": 86000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ],
+     "custom": true,
+     "name": "Activity Bus",
+     "pri": "",
+     "est": true,
+     "rec": []
+    },
+    {
+     "id": 1002,
+     "phases": [
+      {
+       "cost": 60000,
+       "year": 1,
+       "funding": [
+        {
+         "b": "save",
+         "p": 100
+        }
+       ]
+      }
+     ],
+     "custom": true,
+     "name": "Parking Lot Lights",
+     "pri": "",
+     "est": true,
+     "rec": []
+    }
+   ]
+  }
+ ],
+ "activeId": "nobond",
+ "savedAt": "2026-08-31T20:03:46Z"
+}
+</script>
+<div id="root"></div>
+<script id="app-script">
+"use strict";
+/* ==================== SHARED SAVE (Supabase) ====================
+   The only two settings anyone should ever need to change. Both are meant to
+   be public: the publishable key can only do what the table's Row Level
+   Security policies allow, which is read for everyone, write for signed-in
+   users. Blank the URL to turn shared saving off entirely. */
+const SUPABASE_URL = "https://fekacoesxmgsoyarwkao.supabase.co";
+const SUPABASE_KEY = "sb_publishable_jCO7iHzeWLkDsnchTEnbvQ_wvCCx9dV";
+const SUPABASE_ROW = "loma";
+/* ================================================================ */
+
+/* ================= district baseline (never mutated) ================= */
+const N=10;
+/* Bond proceeds: the remainder of the previously passed GO bond, held in the
+   Capital Projects fund. Money already in hand — no annual inflow. The opening
+   figure here is set to the science remodel and needs confirming: the FY2025-26
+   certified budget shows $4,050,000 in Capital Projects. */
+const OPEN={save:1663074,ppel:155000,vppel:0,grants:0,bondp:700000};
+const SAVE_INC=725000,SAVE_DEBT=357000,SAVE_ONG=175000;
+const PPEL_INC=91000,PPEL_ONG=20000;
+const VPPEL_ANNUAL=364000,VPPEL_FIRST=1,VPPEL_LAST=4,GRANT_AVG=140000;
+const YEARS=[];
+for(let i=0;i<N;i++)YEARS.push({fy:"FY"+(2027+i),yr:"Year "+(i+1)+" · Sum "+(2026+i)});
+const BUCKETS={
+  save:{name:"SAVE",color:"var(--save)"},
+  ppel:{name:"PPEL",color:"var(--ppel)"},
+  vppel:{name:"V-PPEL",color:"var(--vppel)"},
+  bondp:{name:"Bond Proceeds",color:"var(--bondp)"},
+  grants:{name:"Grants/Donations",color:"var(--grants)"},
+  boost:{name:"Boosters",color:"var(--boost)"},
+  camp:{name:"Campaign/Bond",color:"var(--camp)"},
+};
+const CAP_ORDER=["save","ppel","vppel","bondp","grants"];
+const SOFT=["grants","boost","camp"];
+const one=(cost,year,b)=>[{cost:cost,year:year,funding:[{b:b,p:100}]}];
+/* Every row below is a capital item from the district's "Comprehensive Improvement
+   Plan - Timeline" spreadsheet, with that sheet's cost, completion date, priority
+   and funding source. est = the sheet says TBD or gives a range, so the figure is
+   a planning estimate. Operating items (staffing, programs, curriculum) are not
+   here — they are General Fund, not capital. */
+const DEFAULT_PROJECTS=[
+  {id:1,name:"Remodel Secondary Science Classrooms",pri:"High",rec:["bondp","save","ppel"],phases:one(700000,0,"bondp")},
+  {id:2,name:"Renovate Level 3 SpEd Classroom Space",pri:"High",est:true,rec:["save","ppel","vppel"],phases:one(145000,0,"save")},
+  {id:3,name:"Construct Greenhouse",pri:"Med",rec:["grants","save"],phases:one(5000,0,"grants")},
+  {id:4,name:"Install Updated Entry Systems",pri:"High",est:true,rec:["save","ppel","grants"],phases:one(60000,1,"save")},
+  {id:5,name:"Update Buzzer & Camera Systems",pri:"High",est:true,rec:["save","grants"],phases:one(110000,1,"save")},
+  {id:6,name:"Elementary Playground (4-yr plan)",pri:"Med",rec:["grants","save"],phases:one(650000,1,"save")},
+  {id:7,name:"Baseball Press Box / Softball Dugout",pri:"Med",rec:["boost","save"],phases:one(15000,1,"boost")},
+  {id:8,name:"Replace MS/HS Lockers",pri:"Med",rec:["save","ppel","vppel"],phases:one(125000,1,"save")},
+  {id:9,name:"Renovate Public Restrooms",pri:"Med",est:true,rec:["save","ppel","vppel"],phases:one(160000,1,"save")},
+  /* Sheet: "Purchase Two New Vans, Summer 2027 & Summer 2029, $60,000-$75,000".
+     Read as per-van; if it is the total for both, halve each phase. */
+  {id:17,name:"Purchase Two New Vans",pri:"Med",est:true,rec:["save","ppel"],phases:[
+    {cost:67500,year:1,funding:[{b:"save",p:100}]},
+    {cost:67500,year:3,funding:[{b:"save",p:100}]}]},
+  {id:10,name:"Design & Install All-Weather Track",pri:"Med",rec:["camp","grants"],phases:one(1500000,4,"camp")},
+  {id:11,name:"Parking Lot Repaving",pri:"Med",rec:["ppel","vppel"],phases:one(500000,4,"ppel")},
+  {id:12,name:"Renovate Bond Building for Shop/FFA",pri:"Med",rec:["camp","save"],phases:one(200000,4,"camp")},
+  {id:13,name:"Renovate Locker Rooms for HOSA",pri:"Low",est:true,rec:["save","grants"],phases:one(200000,4,"save")},
+  {id:14,name:"Update Phone & Intercom System",pri:"Med",est:true,rec:["save"],phases:one(105000,4,"save")},
+  {id:15,name:"Improve Outdoor Athletic Spaces",pri:"Med",est:true,rec:["boost","save"],phases:one(50000,4,"boost")},
+  /* The sheet's three 10-Year Goals. All priced TBD there, so they carry $0 —
+     visible and unpriced beats invisible. Put a figure in when the board has one. */
+  {id:18,name:"Increase Indoor Athletic Space",pri:"10-yr",est:true,rec:["camp"],phases:one(0,9,"camp")},
+  {id:19,name:"Renovate Fine Arts Spaces",pri:"10-yr",est:true,rec:["camp"],phases:one(0,9,"camp")},
+  {id:20,name:"Construct Secure Entrances (both buildings)",pri:"10-yr",est:true,rec:["camp","grants"],phases:one(0,9,"camp")},
+  /* NOT in the district spreadsheet — from the Elevate Roofing report of
+     10 Jul 2026. Five of fifteen sections reach end of life inside this window.
+     Areas were scaled off the report's section map, so these are planning
+     figures until the roofer gives measured square footage. */
+  {id:16,name:"Roof Replacement Program",pri:"High",est:true,rec:["ppel","save","vppel"],phases:[
+    {cost:160000,year:1,funding:[{b:"save",p:100}]},
+    {cost:370000,year:2,funding:[{b:"save",p:100}]},
+    {cost:270000,year:4,funding:[{b:"save",p:100}]}]},
+];
+const PRI_ORDER={High:0,Med:1,Low:2,"10-yr":3};
+const DEFAULT_LEVERS={vppel:false,pg:0.04,gy:0.75,sg:0,infl:0};
+const clone=o=>JSON.parse(JSON.stringify(o));
+const uid=()=>"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
+/* ================= stored document ================= */
+const STASH_KEY="loma-cip-planner-unsaved";
+let DOC={v:2,scenarios:[],activeId:null};
+try{
+  const raw=JSON.parse(document.getElementById("planner-state").textContent)||{};
+  if(Array.isArray(raw.scenarios))DOC={v:2,scenarios:raw.scenarios,activeId:raw.activeId||null,savedAt:raw.savedAt||null};
+  else if(raw.projects){ /* migrate the single saved plan from v1 */
+    DOC={v:2,scenarios:[{id:"s1",name:"Saved plan",savedAt:raw.savedAt||null,levers:raw.levers||null,projects:raw.projects}],activeId:"s1",savedAt:raw.savedAt||null};
+  }
+}catch(e){}
+const scById=id=>DOC.scenarios.find(s=>s.id===id)||null;
+
+/* Merge a stored plan onto the district project list. A stored record may carry
+   phases (amounts / years / funding), a name override, del:true to drop a
+   baseline row, or custom:true for a project someone added here. Priorities,
+   est flags and recommended sources stay canonical for baseline rows, and rows
+   added to the baseline later still appear in older scenarios. */
+function cleanPhases(raw){
+  return raw.map(ph=>{
+    let f=Array.isArray(ph.funding)?ph.funding.filter(x=>x&&BUCKETS[x.b]).map(x=>({b:x.b,p:Number(x.p)||0})).slice(0,3):[];
+    if(!f.length)f=[{b:"save",p:100}];
+    const tot=f.reduce((a,x)=>a+x.p,0);if(tot!==100&&tot>0)f.forEach(x=>x.p=Math.round(x.p/tot*100));
+    return {cost:Math.max(0,Number(ph.cost)||0),year:Math.max(0,Math.min(N-1,Number(ph.year)||0)),funding:f};
+  }).slice(0,8);
+}
+function hydrate(stored){
+  let base=clone(DEFAULT_PROJECTS);
+  if(!Array.isArray(stored))return base;
+  const byId={};stored.forEach(s=>{if(s&&s.id!=null)byId[s.id]=s;});
+  base=base.filter(p=>!(byId[p.id]&&byId[p.id].del));
+  base.forEach(p=>{
+    const s=byId[p.id];if(!s)return;
+    if(typeof s.name==="string"&&s.name.trim())p.name=s.name.trim();
+    const raw=Array.isArray(s.phases)?s.phases
+      :(typeof s.cost==="number"?[{cost:s.cost,year:s.year,funding:s.funding}]:null); /* v1 shape */
+    if(!raw)return;
+    const phases=cleanPhases(raw);
+    if(phases.length)p.phases=phases;
+  });
+  const known={};DEFAULT_PROJECTS.forEach(d=>known[d.id]=1);
+  stored.forEach(s=>{
+    if(!s||s.id==null||known[s.id]||s.del)return;
+    const phases=cleanPhases(Array.isArray(s.phases)?s.phases:[{cost:0,year:0,funding:null}]);
+    base.push({id:s.id,name:(typeof s.name==="string"&&s.name.trim())?s.name.trim():"Untitled project",
+      pri:s.pri||"", est:s.est!==false, custom:true,
+      rec:Array.isArray(s.rec)?s.rec.filter(b=>BUCKETS[b]):[], phases:phases.length?phases:cleanPhases([{cost:0,year:0}])});
+  });
+  return base;
+}
+function leversOf(stored){return Object.assign({},DEFAULT_LEVERS,stored||{});}
+
+/* working (on-screen) state */
+const VIEW_KEY="loma-cip-planner-view";
+let viewId=DOC.activeId&&scById(DOC.activeId)?DOC.activeId:(DOC.scenarios[0]?DOC.scenarios[0].id:null);
+/* a save that creates or duplicates a scenario reloads the page; land on it */
+try{const want=sessionStorage.getItem(VIEW_KEY);
+  if(want){sessionStorage.removeItem(VIEW_KEY);if(scById(want))viewId=want;}}catch(e){}
+let PROJECTS,S;
+function loadInto(sc){PROJECTS=hydrate(sc?sc.projects:null);S=leversOf(sc?sc.levers:null);}
+loadInto(scById(viewId));
+
+/* ================= math (pure) ================= */
+const fmtK=n=>{const s=n<0?"-":"";n=Math.abs(n);
+  if(n>=1e6)return s+"$"+(n/1e6).toFixed(2)+"M";
+  if(n>=1000)return s+"$"+Math.round(n/1000)+"k";return s+"$"+Math.round(n);};
+function inflow(bucket,y,L){
+  if(bucket==="save"){const debt=y<4?SAVE_DEBT:0;return SAVE_INC*Math.pow(1+L.sg,y)-debt-SAVE_ONG;}
+  if(bucket==="ppel")return PPEL_INC*Math.pow(1+L.pg,y)-PPEL_ONG;
+  if(bucket==="vppel")return (L.vppel&&y>=VPPEL_FIRST&&y<=VPPEL_LAST)?VPPEL_ANNUAL:0;
+  if(bucket==="grants")return GRANT_AVG*L.gy;
+  return 0;
+}
+const escalated=(ph,L)=>ph.cost*Math.pow(1+L.infl,ph.year);
+/* zeroed tallies built from BUCKETS, so adding a bucket can never leave one
+   uninitialised (that silently turns its spend into NaN) */
+const zeroBuckets=()=>{const o={};for(const k in BUCKETS)o[k]=0;return o;};
+function computeFor(projects,L){
+  const carry=zeroBuckets();CAP_ORDER.forEach(b=>carry[b]=OPEN[b]||0);
+  const res=YEARS.map(()=>({spend:{},avail:{},carryIn:{},over:{},ext:{boost:0,camp:0},total:0}));
+  const spentByBucket=zeroBuckets();
+  let need=0;
+  for(let y=0;y<N;y++){
+    const spend=zeroBuckets();
+    projects.forEach(p=>p.phases.forEach(ph=>{
+      if(ph.year!==y)return;
+      const c=escalated(ph,L);need+=c;res[y].total+=c;
+      ph.funding.forEach(f=>{spend[f.b]+=c*f.p/100;});
+    }));
+    for(const b of CAP_ORDER){
+      const avail=carry[b]+inflow(b,y,L);
+      res[y].carryIn[b]=carry[b];res[y].avail[b]=avail;res[y].spend[b]=spend[b];
+      const left=avail-spend[b];res[y].over[b]=left<0?-left:0;carry[b]=left>0?left:0;
+      spentByBucket[b]+=spend[b];
+    }
+    res[y].ext.boost=spend.boost;res[y].ext.camp=spend.camp;
+    spentByBucket.boost+=spend.boost;spentByBucket.camp+=spend.camp;
+  }
+  const overflow=res.reduce((a,m)=>a+CAP_ORDER.reduce((s,b)=>s+m.over[b],0),0);
+  const levyFunded=spentByBucket.save+spentByBucket.ppel+spentByBucket.vppel+spentByBucket.grants;
+  return {res,spentByBucket,need,overflow,levyFunded,gap:spentByBucket.camp+overflow};
+}
+
+/* ================= phase + split helpers ================= */
+function setPct(ph,si,val){
+  val=Math.max(0,Math.min(100,Math.round(val)));
+  const arr=ph.funding;
+  if(arr.length===1){arr[0].p=100;return;}
+  const others=arr.map((f,i)=>i).filter(i=>i!==si);
+  const oSum=others.reduce((a,i)=>a+arr[i].p,0);const remain=100-val;
+  arr[si].p=val;
+  if(oSum>0)others.forEach(i=>arr[i].p=arr[i].p/oSum*remain);
+  else others.forEach(i=>arr[i].p=remain/others.length);
+  arr.forEach(f=>f.p=Math.round(f.p));
+  arr[si].p+=100-arr.reduce((a,f)=>a+f.p,0);
+}
+function addSplit(p,ph){
+  if(ph.funding.length>=3)return;
+  const used=ph.funding.map(f=>f.b);
+  const pick=p.rec.find(b=>!used.includes(b))||["save","ppel","grants","camp","boost","vppel"].find(b=>!used.includes(b))||"save";
+  ph.funding.push({b:pick,p:0});
+  const n=ph.funding.length;ph.funding.forEach(f=>f.p=Math.round(100/n));
+  ph.funding[n-1].p+=100-ph.funding.reduce((a,f)=>a+f.p,0);
+}
+function removeSplit(ph,si){
+  if(ph.funding.length<=1)return;
+  ph.funding.splice(si,1);
+  const s=ph.funding.reduce((a,f)=>a+f.p,0)||1;
+  ph.funding.forEach(f=>f.p=Math.round(f.p/s*100));
+  ph.funding[ph.funding.length-1].p+=100-ph.funding.reduce((a,f)=>a+f.p,0);
+}
+/* split a phase in two: half the money moves to the next open year */
+function addPhase(p,pi){
+  if(p.phases.length>=8)return;
+  const src=p.phases[pi];
+  const half=Math.round(src.cost/2/1000)*1000;
+  const rest=src.cost-half;
+  let y=src.year;
+  const taken=p.phases.map(x=>x.year);
+  while(y<N-1&&taken.includes(y+1))y++;
+  const next=Math.min(N-1,y+1);
+  src.cost=rest;
+  p.phases.splice(pi+1,0,{cost:half,year:next,funding:clone(src.funding)});
+  p.phases.sort((a,b)=>a.year-b.year);
+}
+/* removing a phase folds its money back into a neighbour — the total never
+   changes by accident */
+function removePhase(p,pi){
+  if(p.phases.length<=1)return;
+  const gone=p.phases.splice(pi,1)[0];
+  const into=p.phases[Math.max(0,pi-1)];
+  into.cost+=gone.cost;
+}
+
+/* ================= page shell (canonical source for regeneration) ======= */
+const SHELL=`
+  <div class="wrap">
+    <header class="top">
+      <div class="kicker">Lo-Ma Community School District &nbsp;&middot;&nbsp; Board Working Tool</div>
+      <h1>CIP Funding &amp; Timing Planner</h1>
+      <p>Ten years, FY2027–FY2036. Costs and default funding sources follow the district CIP Timeline. Drag a project
+        to a different year, reassign its funding lever, split it across up to three sources, or break it into
+        multi-year <b>phases</b>. Unspent levy room <b>banks forward</b>. Anything the levies and grants can't cover
+        shows up as a <b>gap to close</b> — settle it with a campaign or bond, or by moving or trimming projects.
+        Add, rename or remove projects as the plan changes. It's a wish list, not a mandate. Save any number of
+        named <b>scenarios</b>; the one you mark as the landing view is what the board sees when they open this
+        page. <b>District original (spreadsheet)</b> is locked — it's the reference every other scenario is compared
+        back to. Sign in under <b>Shared plan</b> to save for everyone; otherwise changes stay in your browser.</p>
+    </header>
+    <div class="layout">
+      <aside class="rail">
+        <div id="restore" hidden></div>
+        <div class="card saver" id="saver">
+          <h2>Scenarios<button class="h2side" id="cmpToggle">Compare</button></h2>
+          <div id="scwrap"></div>
+          <div class="btnrow" id="saverow1"><button class="btn primary" id="save">Save</button><button class="btn" id="saveas">Save as…</button></div>
+          <div class="btnrow tight" id="saverow2"><button class="btn sm" id="rename">Rename</button><button class="btn sm" id="dupe">Duplicate</button><button class="btn sm danger" id="del">Delete</button></div>
+          <div class="landnote" id="landrow" hidden><span id="landtxt"></span>
+            <div class="btnrow tight"><button class="btn sm primary" id="setland">Open on this one</button></div></div>
+          <div class="stat"><span class="dot"></span><span id="sstat"></span></div>
+          <div class="btnrow tight"><button class="btn sm" id="discard">Discard changes</button><button class="btn sm" id="reset">District defaults</button></div>
+          <div class="sbbox">
+            <div class="sbstat" id="sbstat">Checking the shared plan…</div>
+            <div class="btnrow tight" id="sbin" hidden>
+              <input id="sbemail" type="email" inputmode="email" placeholder="you@lomaschools.org" aria-label="Your email">
+              <button class="btn sm" id="sbsend">Email me a sign-in link</button>
+            </div>
+            <div class="btnrow tight" id="sbout" hidden><button class="btn sm" id="sbsignout">Sign out</button></div>
+          </div>
+          <div class="portbox">
+            <div class="btnrow"><button class="btn sm" id="dlplan">Download plan</button><button class="btn sm" id="loadplan">Load plan…</button></div>
+            <div class="btnrow tight" id="linkrow" hidden><button class="btn sm" id="copylink">Copy link to this plan</button></div>
+            <input type="file" id="planfile" accept=".json,application/json" hidden>
+            <div class="porthint" id="porthint">A plan file holds every scenario. Keep it in the district drive, mail it, or load one someone sends you.</div>
+          </div>
+          
+        </div>
+        <div id="verdict" class="verdict short"></div>
+        <div class="card">
+          <h2>Scenario levers</h2>
+          <label class="toggle" style="margin-bottom:6px">
+            <input type="checkbox" id="vppel"><span class="tk"></span>
+            <span class="lv-name">Voter-approve V-PPEL</span>
+          </label>
+          <div class="lv-note" style="margin:-2px 0 14px">Adds $364,000/yr, collected FY2028–FY2031 (4 yrs) after a successful vote. A renewal beyond FY2031 is <b>not</b> modelled — that's a board decision, not an assumption.</div>
+          <div class="lever">
+            <div class="lv-top"><span class="lv-name">PPEL valuation growth</span><span class="lv-val" id="pgv">4.0%</span></div>
+            <input type="range" id="pg" min="0" max="6" step="0.5" value="4">
+            <div class="lv-note">District historic average 4–5%.</div>
+          </div>
+          <div class="lever">
+            <div class="lv-top"><span class="lv-name">Grant yield to CIP</span><span class="lv-val" id="gyv">75%</span></div>
+            <input type="range" id="gy" min="50" max="100" step="5" value="75">
+            <div class="lv-note">$140k avg × yield. District: 75–85% is the floor.</div>
+          </div>
+          <div class="lever">
+            <div class="lv-top"><span class="lv-name">SAVE receipts trend</span><span class="lv-val" id="sgv">0.0%</span></div>
+            <input type="range" id="sg" min="-3" max="2" step="0.5" value="0">
+            <div class="lv-note">Base is $725k flat. Tax reform predicts a slight dip through ~2032 — set negative to stress it.</div>
+          </div>
+          <div class="lever">
+            <div class="lv-top"><span class="lv-name">Construction inflation</span><span class="lv-val" id="iv">0.0%</span></div>
+            <input type="range" id="infl" min="0" max="6" step="0.5" value="0">
+            <div class="lv-note">Off by default, so costs match the CIP document. Over a 10-year plan deferral isn't free — the district analysis assumes ~4%/yr. Set it to see what a later year really costs.</div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Where the $<span id="needTot" class="num">5.33M</span> lands</h2>
+          <div class="legend" id="legend"></div>
+          <div class="rec" style="margin-top:9px">★ = source the district named for that project. Any bucket is selectable; a ⚠ marks soft money used off its usual purpose — confirm eligibility.</div>
+        </div>
+      </aside>
+      <main>
+        <div id="compare" hidden></div>
+        <div class="yearsbar">
+          <span id="hidden-note"></span>
+          <button class="linkbtn sp" id="showall">Show all 10 years</button>
+        </div>
+        <div class="years" id="years"></div>
+      </main>
+    </div>
+    <div class="foot" id="foot"></div>
+  </div>`;
+document.getElementById("root").innerHTML=SHELL;
+
+/* ================= document regeneration (no DOM serialization) ======== */
+const CSS=document.getElementById("app-style").textContent;
+const APP=document.getElementById("app-script").textContent;
+function renderDoc(state){
+  const json=JSON.stringify(state,null,1).replace(/</g,"\\u003c");
+  return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n'
+    +'<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+    +'<title>Lo-Ma Capital Plan Explorer<\/title>\n'
+    +'<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+    +'<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+    +'<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">\n'
+    +'<style id="app-style">'+CSS+'<\/style>\n</head>\n<body>\n'
+    +'<script type="application/json" id="planner-state">\n'+json+'\n<\/script>\n'
+    +'<div id="root"><\/div>\n'
+    +'<script id="app-script">'+APP+'<\/script>\n</body>\n</html>';
+}
+function packProjects(projects){
+  const out=[],here={};
+  projects.forEach(p=>here[p.id]=p);
+  DEFAULT_PROJECTS.forEach(d=>{if(!here[d.id])out.push({id:d.id,del:true});});
+  projects.forEach(p=>{
+    const d=DEFAULT_PROJECTS.find(x=>x.id===p.id);
+    const rec={id:p.id,phases:p.phases.map(ph=>({cost:ph.cost,year:ph.year,funding:ph.funding.map(f=>({b:f.b,p:f.p}))}))};
+    if(!d){rec.custom=true;rec.name=p.name;rec.pri=p.pri||"";rec.est=p.est!==false;rec.rec=p.rec||[];}
+    else if(p.name!==d.name)rec.name=p.name;
+    out.push(rec);
+  });
+  return out;
+}
+function workingPlan(){return {levers:{vppel:S.vppel,pg:S.pg,gy:S.gy,sg:S.sg,infl:S.infl},projects:packProjects(PROJECTS)};}
+function sigOf(plan){const L=leversOf(plan.levers);
+  return JSON.stringify([L.vppel,L.pg,L.gy,L.sg,L.infl,
+    packProjects(hydrate(plan.projects)).map(p=>[p.id,p.del?1:0,p.name||"",
+      (p.phases||[]).map(ph=>[ph.year,ph.cost,ph.funding.map(f=>[f.b,f.p])])])]);}
+const baselineSig=sigOf({levers:null,projects:null});
+function activeSig(){const sc=scById(viewId);return sc?sigOf({levers:sc.levers,projects:sc.projects}):baselineSig;}
+function isDirty(){return sigOf(workingPlan())!==activeSig();}
+
+/* ================= save / publish ================= */
+let ART=null,READONLY=false,BUSY=false,ERRMSG="",RETRIED=false,PENDING=null,NOCLAUDE=false,JUSTSAVED=false;
+let FILEDIRTY=false; /* scenarios changed in this browser but not yet written to a plan file */
+/* what this view actually managed to do — readable on the page, so a problem
+   can be reported as facts instead of symptoms */
+const DIAG={shell:false,capability:"not checked yet",attempts:0,lastPublish:"none this session",docBytes:0};
+function paintDiag(){
+  const el=document.getElementById("diag");if(!el)return;
+  const sc=DOC.scenarios.length;
+  el.innerHTML=`<b>This view</b>
+    shell ${DIAG.shell?"yes":"NO"} · capability ${esc(DIAG.capability)} (${DIAG.attempts} tr)<br>
+    version saved ${DOC.savedAt?esc(fmtWhen(DOC.savedAt)):"never"} · ${sc} scenario${sc===1?"":"s"}<br>
+    last save from here: ${esc(DIAG.lastPublish)}
+    ${READONLY?'<div class="btnrow tight"><button class="btn sm" id="retryart">Retry connection</button></div>':""}`;
+}
+/* the district original is read-only: duplicate it to explore */
+const isLocked=()=>{const sc=scById(viewId);return !!(sc&&sc.locked);};
+/* Being unable to SAVE is not a reason to be unable to EDIT. A viewer without
+   write access gets the whole tool — drag, phase, re-fund, run what-ifs — in
+   their own browser; only publishing is withheld. The district original stays
+   locked for everyone, viewers included. */
+const canEdit=()=>!BUSY&&!isLocked();
+const saverEl=document.getElementById("saver"),statEl=document.getElementById("sstat");
+const saveBtn=document.getElementById("save");
+const fmtWhen=iso=>{if(!iso)return "";try{const d=new Date(iso);
+  return d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"})+" at "+
+    d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});}catch(e){return "earlier";}};
+function goReadOnly(){READONLY=true;ERRMSG="";BUSY=false;PENDING=null;paint();}
+async function publishDoc(mutate,nextView){
+  if(BUSY)return;
+  if(SB.on&&SB.token)return sbPublish(mutate,nextView); /* shared plan wins when we can write to it */
+  /* No runtime to publish to — on the district site, an emailed copy, or as a
+     viewer. Scenarios still work: they live in this browser, and Download plan
+     is what makes them permanent. */
+  if(!ART){
+    mutate(DOC);
+    DOC.v=2;DOC.savedAt=new Date().toISOString();
+    if(nextView)viewId=nextView;
+    if(!scById(viewId))viewId=DOC.scenarios[0]?DOC.scenarios[0].id:null;
+    loadInto(scById(viewId));
+    FILEDIRTY=true;ERRMSG="";nameMode=null;confirmDel=false;pendingSwitch=null;
+    syncLevers();render();
+    hint("Scenario list updated in this browser. Press <b>Download plan</b> to keep it.","ok");
+    return;
+  }
+  const next=clone(DOC);
+  mutate(next);
+  next.v=2;next.savedAt=new Date().toISOString();
+  BUSY=true;ERRMSG="";PENDING=next;paint();
+  try{sessionStorage.setItem(STASH_KEY,JSON.stringify({plan:workingPlan(),viewId:nextView||viewId}));
+    sessionStorage.setItem(VIEW_KEY,nextView||viewId||"");}catch(e){}
+  /* the shell reloads the view on success; if it doesn't, don't sit on "Saving…" forever */
+  const stuck=setTimeout(()=>{if(BUSY){BUSY=false;
+    ERRMSG="Saved, but this page didn't reload to confirm it. Refresh to see the saved version.";paint();}},12000);
+  try{
+    const doc=renderDoc(next);DIAG.docBytes=doc.length;
+    const r=await ART.publish(doc); /* the view reloads to the new version */
+    clearTimeout(stuck);
+    DIAG.lastPublish="OK "+((r&&r.version)||"")+" ("+Math.round(doc.length/1024)+"kB)";paintDiag();
+  }catch(err){
+    clearTimeout(stuck);
+    const code=(err&&err.code)||"upstream_error";
+    DIAG.lastPublish="FAILED "+code;paintDiag();
+    BUSY=false;PENDING=null;
+    if(code==="conflict")ERRMSG="Someone else saved first. This page is reloading to their version — your changes are kept and you'll be offered them back.";
+    else if(code==="not_writer"||code==="not_granted"||code==="not_declared"||code==="consent_required"||code==="capability_disabled"||code==="capability_removed"){
+      try{sessionStorage.removeItem(STASH_KEY);}catch(e){}goReadOnly();return;}
+    else if(code==="rate_limited")ERRMSG="Saving too often. Wait a few seconds and save again.";
+    else if(code==="too_large")ERRMSG="Too large to save. Delete an old scenario and try again.";
+    else if(code==="invalid_content"||code==="transform_error")ERRMSG="The page couldn't be rebuilt for saving. Reload and try once more; if it repeats, this needs a fix in the tool.";
+    else if(!RETRIED){RETRIED=true;ERRMSG="Save didn't go through. Retrying…";paint();
+      setTimeout(()=>{ERRMSG="";publishDoc(mutate,nextView);},900+Math.random()*700);return;}
+    else ERRMSG="Save failed ("+code+"). Your changes are still here — try again in a moment.";
+    paint();
+  }
+}
+const nowIso=()=>new Date().toISOString();
+function saveActive(){
+  const sc=scById(viewId);
+  if(sc&&sc.locked)return; /* the original is never overwritten */
+  if(!sc){startName("new","Scenario "+(DOC.scenarios.length+1));return;}
+  publishDoc(d=>{const t=d.scenarios.find(x=>x.id===viewId);
+    Object.assign(t,workingPlan(),{savedAt:nowIso()});d.activeId=viewId;});
+}
+function saveAsNew(name){
+  const id=uid();
+  publishDoc(d=>{d.scenarios.push(Object.assign({id:id,name:name,savedAt:nowIso()},workingPlan()));
+    if(!d.activeId)d.activeId=id;},id);
+}
+
+/* ================= scenario rail ================= */
+let nameMode=null,confirmDel=false,showCompare=false,pendingSwitch=null;
+const scwrap=document.getElementById("scwrap");
+function startName(mode,seed){nameMode={mode:mode,seed:seed};confirmDel=false;paint();
+  const i=document.getElementById("nminput");if(i){i.focus();i.select();}}
+function paintScenarios(){
+  let h="";
+  if(confirmDel){
+    const sc=scById(viewId);
+    h+=`<div class="confirm"><b>Delete “${esc(sc?sc.name:"")}”?</b> This removes it for everyone.
+      <div class="btnrow tight"><button class="btn sm danger" id="delyes">Delete</button><button class="btn sm" id="delno">Keep</button></div></div>`;
+  }
+  if(pendingSwitch){
+    const to=scById(pendingSwitch);
+    h+=`<div class="confirm"><b>Unsaved changes here.</b> Switching to “${esc(to?to.name:"")}” discards them.
+      <div class="btnrow tight"><button class="btn sm" id="swyes">Discard and switch</button><button class="btn sm" id="swno">Stay</button></div></div>`;
+  }
+  if(nameMode){
+    h+=`<div class="namer"><input id="nminput" maxlength="48" value="${esc(nameMode.seed)}"
+      placeholder="Scenario name"><button class="btn sm primary" id="nmok">OK</button></div>`;
+  }
+  if(!DOC.scenarios.length){
+    h+=`<div class="scnone">No scenarios saved yet. You're looking at the district baseline — adjust it, then <b>Save as…</b> to name your first scenario.</div>`;
+  }else{
+    h+=`<div class="sclist">`;
+    DOC.scenarios.forEach(sc=>{
+      const sum=computeFor(hydrate(sc.projects),leversOf(sc.levers));
+      const home=sc.id===DOC.activeId?`<span class="home" title="The board lands on this one">⌂</span>`:"";
+      const lk=sc.locked?`<span class="lockmark" title="Read-only original">🔒</span>`:"";
+      h+=`<button class="sc ${sc.id===viewId?"on":""}" data-sc="${sc.id}">
+        <span class="nm">${esc(sc.name)}</span>${lk}${home}
+        <span class="gap num ${sum.gap>0?"":"ok"}">${sum.gap>0?fmtK(sum.gap):"covered"}</span></button>`;
+    });
+    h+=`</div>`;
+  }
+  scwrap.innerHTML=h;
+  scwrap.querySelectorAll(".sc").forEach(b=>b.onclick=()=>switchTo(b.dataset.sc));
+  const ok=document.getElementById("nmok");
+  if(ok){
+    const inp=document.getElementById("nminput");
+    const go=()=>{const v=(inp.value||"").trim()||"Untitled scenario";const m=nameMode.mode;nameMode=null;
+      if(m==="new")saveAsNew(v);
+      else if(m==="rename")publishDoc(d=>{const t=d.scenarios.find(x=>x.id===viewId);if(t)t.name=v;});
+      else if(m==="dupe"){const id=uid();
+        publishDoc(d=>{d.scenarios.push(Object.assign({id:id,name:v,savedAt:nowIso()},workingPlan()));},id);}
+    };
+    ok.onclick=go;inp.onkeydown=e=>{if(e.key==="Enter")go();if(e.key==="Escape"){nameMode=null;paint();}};
+  }
+  const dy=document.getElementById("delyes");
+  if(dy){
+    dy.onclick=()=>{const gone=viewId;confirmDel=false;
+      /* land on the neighbour you were next to, not on the locked original */
+      const i=DOC.scenarios.findIndex(x=>x.id===gone);
+      const rest=DOC.scenarios.filter(x=>x.id!==gone);
+      const near=rest[Math.max(0,i-1)]||rest[0];
+      const land=(near&&!near.locked)?near:(rest.find(x=>!x.locked)||rest[0]);
+      publishDoc(d=>{d.scenarios=d.scenarios.filter(x=>x.id!==gone);
+        if(d.activeId===gone)d.activeId=(d.scenarios.find(x=>!x.locked)||d.scenarios[0]||{}).id||null;},
+        land?land.id:"");};
+    document.getElementById("delno").onclick=()=>{confirmDel=false;paint();};
+  }
+  const sy=document.getElementById("swyes");
+  if(sy){
+    sy.onclick=()=>{const id=pendingSwitch;pendingSwitch=null;doSwitch(id);};
+    document.getElementById("swno").onclick=()=>{pendingSwitch=null;paint();};
+  }
+}
+function doSwitch(id){
+  viewId=id;loadInto(scById(id));nameMode=null;confirmDel=false;pendingSwitch=null;ERRMSG="";syncLevers();render();
+}
+function switchTo(id){
+  if(id===viewId)return;
+  if(isDirty()){pendingSwitch=id;confirmDel=false;nameMode=null;paint();return;}
+  doSwitch(id);
+}
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function paintSaver(){
+  const dirty=isDirty(),sc=scById(viewId);
+  saverEl.classList.toggle("is-dirty",dirty&&!READONLY&&!ERRMSG);
+  saverEl.classList.toggle("is-ro",READONLY);
+  saverEl.classList.toggle("is-err",!!ERRMSG);
+  const locked=isLocked();
+  saverEl.classList.toggle("is-locked",locked);
+  let html;
+  if(ERRMSG)html="<b>Not saved</b>"+ERRMSG;
+  else if(SB.on&&!SB.token&&dirty)html="<b>Unsaved changes</b>Only in your browser. <b>Save as…</b> keeps them here, <b>Download plan</b> writes them to a file. To save for everyone, sign in under <b>Shared plan</b>.";
+  else if(READONLY&&dirty)html="<b>Unsaved changes</b>"+(sc?"Press <b>Save</b> to keep them in “"+esc(sc.name)+"”, or <b>Save as…</b> to start a new scenario. Then <b>Download plan</b> to keep the whole set.":"Press <b>Save as…</b> to name this as a scenario.");
+  else if(READONLY&&FILEDIRTY)html="<b>Saved in this browser</b>Your scenarios are up to date here, but this page can't store them. Press <b>Download plan</b> — that file is the permanent copy.";
+  else if(READONLY)html="<b>Your own copy</b>Build as many scenarios as you like: Save, Save as…, Rename, Duplicate, Delete all work. They live in this browser only — <b>Download plan</b> writes the whole set to a file you can keep, mail, or load again.";
+  else if(locked&&READONLY)html="<b>District original — read-only</b>This one is locked for everyone: it reproduces the CIP Timeline spreadsheet exactly. Pick another scenario above and you can change anything you like in your own copy.";
+  else if(locked&&dirty)html="<b>Original is read-only</b>Your changes can't be saved onto the district original. Press <b>Duplicate</b> to keep them as a new scenario.";
+  else if(locked)html="<b>District original — read-only</b>Validated against the CIP Timeline spreadsheet. Duplicate it to explore changes.";
+  
+  else if(BUSY)html="<b>Saving…</b>The page will reload to the saved version.";
+  else if(dirty)html="<b>Unsaved changes</b>"+(sc?"“"+esc(sc.name)+"” was last saved "+fmtWhen(sc.savedAt)+". Press Save to keep them.":"Nothing saved yet — this is the district baseline.");
+  else if(JUSTSAVED&&sc)html="<b>Saved ✓</b>“"+esc(sc.name)+"” saved "+fmtWhen(sc.savedAt)+". Everyone opening this page sees it.";
+  else if(sc)html="<b>No changes to save</b>“"+esc(sc.name)+"”, last saved "+fmtWhen(sc.savedAt)+". Adjust something and Save lights up.";
+  else html="<b>District baseline</b>Nothing saved yet. Adjust a scenario, then Save as…";
+  statEl.innerHTML=html;
+  /* a viewer who can never save is shown no save controls at all — a row of
+     dead buttons reads as broken software */
+  document.getElementById("saverow1").hidden=false;
+  document.getElementById("saverow2").hidden=false;
+  const lock=BUSY; /* scenarios can be managed with or without a runtime */
+  saveBtn.disabled=lock||locked||!sc||!dirty;
+  saveBtn.textContent=BUSY?"Saving…":"Save";
+  saveBtn.title=locked?"The district original can't be overwritten — use Duplicate":
+    (!dirty&&sc?"Nothing has changed yet":"Save this scenario for everyone");
+  document.getElementById("saveas").disabled=lock;
+  document.getElementById("rename").disabled=lock||locked||!sc;
+  document.getElementById("dupe").disabled=lock||!sc;
+  document.getElementById("del").disabled=lock||locked||!sc;
+  /* these two are local-only, so a viewer keeps them */
+  document.getElementById("discard").disabled=BUSY||!dirty;
+  document.getElementById("discard").textContent=READONLY?"Undo my changes":"Discard changes";
+  document.getElementById("reset").disabled=BUSY||locked;
+  ["vppel","pg","gy","sg","infl"].forEach(k=>{const el=document.getElementById(k);if(el)el.disabled=locked||BUSY;});
+  /* A saved scenario that isn't the landing view is the classic "my changes
+     vanished": the work is saved, but a fresh browser opens on a different
+     scenario. Say so plainly instead of hiding it behind a small button. */
+  const showLand=!!sc&&DOC.activeId!==viewId&&!READONLY;
+  document.getElementById("landrow").hidden=!showLand;
+  if(showLand){
+    const home=scById(DOC.activeId);
+    document.getElementById("landtxt").innerHTML=
+      "A fresh browser opens this planner on <b>"+esc(home?home.name:"another scenario")+
+      "</b>, not “"+esc(sc.name)+"”. Your work here is saved either way.";
+  }
+  document.getElementById("setland").disabled=lock;
+}
+saveBtn.onclick=saveActive;
+document.getElementById("saveas").onclick=()=>startName("new",(scById(viewId)?scById(viewId).name+" copy":"Scenario "+(DOC.scenarios.length+1)));
+document.getElementById("rename").onclick=()=>startName("rename",scById(viewId)?scById(viewId).name:"");
+document.getElementById("dupe").onclick=()=>startName("dupe",(scById(viewId)?scById(viewId).name+" copy":"Copy"));
+document.getElementById("del").onclick=()=>{confirmDel=true;nameMode=null;paint();};
+document.getElementById("setland").onclick=()=>publishDoc(d=>{d.activeId=viewId;});
+document.getElementById("discard").onclick=()=>{loadInto(scById(viewId));ERRMSG="";syncLevers();render();};
+document.getElementById("reset").onclick=()=>{if(isLocked())return;PROJECTS=clone(DEFAULT_PROJECTS);S=Object.assign({},DEFAULT_LEVERS);syncLevers();render();};
+document.getElementById("cmpToggle").onclick=()=>{showCompare=!showCompare;paint();};
+window.addEventListener("beforeunload",e=>{if(BUSY)return;
+  if(isDirty()||FILEDIRTY){e.preventDefault();e.returnValue="";}});
+
+
+/* ============ shared plan: read for all, write for signed-in ============
+   Plain REST, no library — the page stays one self-contained file, keeps
+   working offline, and adds no third-party script to a district site. The
+   scenarios baked into this file remain the fallback if the service is
+   unreachable or paused. */
+const SB={on:false,url:SUPABASE_URL,key:SUPABASE_KEY,row:SUPABASE_ROW,
+  token:null,email:null,stamp:null,force:false,note:"",checked:false};
+const TOKEN_KEY="loma-sb-token";
+const sbConfigured=()=>!!(SB.url&&SB.key&&/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(SB.url));
+const sbHead=(auth)=>({apikey:SB.key,Authorization:"Bearer "+(auth||SB.key),"Content-Type":"application/json"});
+
+async function sbRead(){
+  const r=await fetch(SB.url+"/rest/v1/plan?id=eq."+encodeURIComponent(SB.row)+"&select=doc,updated_at",
+    {headers:sbHead(),cache:"no-store"});
+  if(!r.ok)throw new Error("read "+r.status);
+  return (await r.json())[0]||null;
+}
+async function sbWrite(doc){
+  const r=await fetch(SB.url+"/rest/v1/plan?id=eq."+encodeURIComponent(SB.row),
+    {method:"PATCH",headers:Object.assign(sbHead(SB.token),{Prefer:"return=representation"}),
+     body:JSON.stringify({doc:doc,updated_at:new Date().toISOString()})});
+  if(!r.ok){const t=(await r.text()).slice(0,160);
+    throw new Error(r.status===401||r.status===403?"not signed in, or your sign-in expired":r.status+" "+t);}
+  return (await r.json())[0];
+}
+async function sbWhoAmI(tok){
+  const r=await fetch(SB.url+"/auth/v1/user",{headers:{apikey:SB.key,Authorization:"Bearer "+tok}});
+  if(!r.ok)return null;
+  const u=await r.json();return u&&u.email?u.email:null;
+}
+async function sbSendLink(email){
+  const back=location.href.split("#")[0];
+  const r=await fetch(SB.url+"/auth/v1/otp?redirect_to="+encodeURIComponent(back),
+    {method:"POST",headers:{apikey:SB.key,"Content-Type":"application/json"},
+     body:JSON.stringify({email:email,create_user:true})});
+  if(!r.ok)throw new Error((await r.text()).slice(0,160));
+}
+function sbGrabTokenFromHash(){
+  const m=/access_token=([^&]+)/.exec(location.hash||"");
+  if(!m)return null;
+  const tok=decodeURIComponent(m[1]);
+  try{localStorage.setItem(TOKEN_KEY,tok);}catch(e){}
+  history.replaceState(null,"",location.pathname+location.search); /* keep the token out of the address bar */
+  return tok;
+}
+function sbStoredToken(){try{return localStorage.getItem(TOKEN_KEY)||null;}catch(e){return null;}}
+function sbSignOut(){SB.token=null;SB.email=null;try{localStorage.removeItem(TOKEN_KEY);}catch(e){}
+  hint("Signed out. You can still explore and use plan files.","ok");render();}
+
+async function sbBoot(){
+  if(!sbConfigured()){SB.note="Shared saving is switched off in this copy.";SB.checked=true;return;}
+  const tok=sbGrabTokenFromHash()||sbStoredToken();
+  try{
+    const row=await sbRead();
+    SB.on=true;
+    if(row&&row.doc&&Array.isArray(row.doc.scenarios)&&row.doc.scenarios.length){
+      try{adoptDoc(row.doc);SB.stamp=row.updated_at;SB.note="";}
+      catch(e){SB.note="The shared plan couldn't be read; showing the copy built into this page.";}
+    }else{SB.stamp=row?row.updated_at:null;SB.note="The shared plan is empty — the first save will fill it.";}
+  }catch(e){
+    SB.on=false;
+    SB.note="Can't reach the shared plan right now, so this is the copy built into this page. "+
+      "Everything works; saves stay on your machine. (A free Supabase project pauses after about a week idle — resuming it in the dashboard fixes this.)";
+  }
+  if(tok&&SB.on){
+    const who=await sbWhoAmI(tok);
+    if(who){SB.token=tok;SB.email=who;}
+    else{try{localStorage.removeItem(TOKEN_KEY);}catch(e){}}
+  }
+  SB.checked=true;
+}
+
+async function sbPublish(mutate,nextView){
+  const next=clone(DOC);mutate(next);next.v=2;next.savedAt=new Date().toISOString();
+  BUSY=true;ERRMSG="";paint();
+  try{
+    const cur=await sbRead();
+    if(cur&&SB.stamp&&cur.updated_at!==SB.stamp&&!SB.force){
+      BUSY=false;SB.force=true;
+      ERRMSG="Someone else saved at "+fmtWhen(cur.updated_at)+
+        ". Press Save again to replace theirs, or reload the page to see it first.";
+      paint();return;
+    }
+    const row=await sbWrite(next);
+    SB.stamp=row?row.updated_at:new Date().toISOString();SB.force=false;
+    DOC=next;
+    if(nextView)viewId=nextView;
+    if(!scById(viewId))viewId=DOC.scenarios[0]?DOC.scenarios[0].id:null;
+    loadInto(scById(viewId));
+    BUSY=false;JUSTSAVED=true;FILEDIRTY=false;
+    nameMode=null;confirmDel=false;pendingSwitch=null;
+    syncLevers();render();
+    hint("Saved to the shared plan — everyone opening this page sees it now.","ok");
+    setTimeout(()=>{JUSTSAVED=false;paintSaver();},6000);
+  }catch(e){BUSY=false;ERRMSG="Couldn't save to the shared plan: "+((e&&e.message)||e);paint();}
+}
+
+function paintSB(){
+  const box=document.getElementById("sbstat");if(!box)return;
+  const inRow=document.getElementById("sbin"),outRow=document.getElementById("sbout");
+  let msg,cls="";
+  if(!SB.checked)msg="Checking the shared plan…";
+  else if(!sbConfigured())msg=SB.note;
+  else if(!SB.on&&window.claude&&window.claude.use)
+    msg="<b>Shared plan not reachable here</b>Claude's viewer blocks outside connections, so this view saves through Claude. The hosted copy on the district link uses the shared plan.";
+  else if(!SB.on){msg=SB.note;cls="bad";}
+  else if(SB.token){msg="<b>Signed in as "+esc(SB.email||"you")+"</b>Saves go to the shared plan everyone sees."+
+    (SB.stamp?" Last shared save "+esc(fmtWhen(SB.stamp))+".":"");cls="ok";}
+  else msg="<b>Shared plan loaded</b>"+(SB.stamp?"Last saved "+esc(fmtWhen(SB.stamp))+". ":"")+
+    "Explore freely — to save for everyone, sign in with your school email.";
+  box.className="sbstat"+(cls?" "+cls:"");box.innerHTML=msg;
+  if(inRow)inRow.hidden=!(SB.on&&!SB.token);
+  if(outRow)outRow.hidden=!(SB.on&&SB.token);
+}
+
+/* ============ plan files and share links ============
+   Saving inside Claude needs the runtime. A plan FILE needs nothing at all, so
+   this works the same whether the page is served by Claude, by the district
+   site, or opened from an email attachment. */
+const b64u=b=>btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const unb64u=s=>{s=s.replace(/-/g,"+").replace(/_/g,"/");const raw=atob(s);
+  const out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out;};
+async function gzip(bytes){const cs=new CompressionStream("gzip");const w=cs.writable.getWriter();
+  w.write(bytes);w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer());}
+async function gunzip(bytes){const ds=new DecompressionStream("gzip");const w=ds.writable.getWriter();
+  w.write(bytes);w.close();return new Uint8Array(await new Response(ds.readable).arrayBuffer());}
+
+/* what's on screen, including unsaved edits to the scenario being viewed */
+function exportDoc(){
+  const d=clone(DOC);
+  const t=d.scenarios.find(x=>x.id===viewId);
+  if(t&&!t.locked)Object.assign(t,workingPlan());
+  d.exportedAt=new Date().toISOString();
+  return d;
+}
+function adoptDoc(obj){
+  if(!obj||!Array.isArray(obj.scenarios)||!obj.scenarios.length)throw new Error("no scenarios in that file");
+  const scs=obj.scenarios.filter(s=>s&&s.id!=null).map(s=>({
+    id:String(s.id),name:(typeof s.name==="string"&&s.name.trim())?s.name.trim().slice(0,80):"Untitled scenario",
+    locked:!!s.locked,savedAt:s.savedAt||null,levers:s.levers||null,
+    projects:Array.isArray(s.projects)?s.projects:[]}));
+  if(!scs.length)throw new Error("no usable scenarios in that file");
+  DOC={v:2,scenarios:scs,activeId:scs.some(s=>s.id===obj.activeId)?obj.activeId:scs[0].id,savedAt:obj.savedAt||null};
+  viewId=DOC.activeId;loadInto(scById(viewId));
+  nameMode=null;confirmDel=false;pendingSwitch=null;ERRMSG="";
+  syncLevers();render();
+}
+const hintEl=()=>document.getElementById("porthint");
+function hint(msg,kind){const h=hintEl();if(!h)return;h.className="porthint"+(kind?" "+kind:"");h.innerHTML=msg;}
+const planName=()=>"LoMa_CIP_plan_"+new Date().toISOString().slice(0,10)+".json";
+
+document.getElementById("dlplan").onclick=async()=>{
+  const text=JSON.stringify(exportDoc(),null,1),name=planName();
+  try{
+    const dl=(window.claude&&window.claude.use)?await window.claude.use("downloads"):null;
+    if(dl){await dl.save({filename:name,data:text});FILEDIRTY=false;paintSaver();hint("Saved "+name+".","ok");return;}
+  }catch(err){
+    const code=(err&&err.code)||"";
+    if(code==="declined"){hint("Download cancelled.",null);return;}
+    if(code!=="unavailable"&&code!=="not_granted"&&code!=="capability_disabled"&&code!=="capability_removed"){
+      hint("Couldn't save the file ("+code+").","bad");return;}
+  }
+  /* Inside the Claude viewer the frame is sandboxed: a link-triggered download
+     is silently swallowed, so don't pretend it worked — hand over the text. */
+  if(window.claude&&window.claude.use){
+    try{await navigator.clipboard.writeText(text);
+      hint("This view can't write files, so the whole plan is on your clipboard — paste it into a file named "+name+". The district copy of the planner downloads directly.","ok");}
+    catch(e){hint("This view can't write files. Use the district copy of the planner to download a plan file.","bad");}
+    return;
+  }
+  /* served from the district site, or opened as a file: ordinary download */
+  try{
+    const url=URL.createObjectURL(new Blob([text],{type:"application/json"}));
+    const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();
+    a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+    FILEDIRTY=false;paintSaver();hint("Saved "+name+" to your downloads.","ok");
+  }catch(e){hint("This browser blocked the download.","bad");}
+};
+document.getElementById("loadplan").onclick=()=>document.getElementById("planfile").click();
+document.getElementById("planfile").onchange=async e=>{
+  const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;
+  try{
+    const obj=JSON.parse(await f.text());
+    adoptDoc(obj);
+    hint("Loaded "+f.name+" — "+DOC.scenarios.length+" scenario"+(DOC.scenarios.length===1?"":"s")+
+      (READONLY?". Nothing here is saved back.":". Press Save to keep it."),"ok");
+  }catch(err){hint("That file isn't a plan file ("+((err&&err.message)||"unreadable")+").","bad");}
+};
+document.getElementById("sbsend").onclick=async()=>{
+  const el=document.getElementById("sbemail"),email=(el.value||"").trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){hint("Enter a valid email address first.","bad");el.focus();return;}
+  const btn=document.getElementById("sbsend");btn.disabled=true;btn.textContent="Sending…";
+  try{await sbSendLink(email);
+    hint("Check "+esc(email)+" — click the link in that email and you'll come back here signed in.","ok");}
+  catch(e){hint("Couldn't send the link: "+esc((e&&e.message)||e),"bad");}
+  btn.disabled=false;btn.textContent="Email me a sign-in link";
+};
+document.getElementById("sbsignout").onclick=sbSignOut;
+document.getElementById("copylink").onclick=async()=>{
+  try{
+    const bytes=new TextEncoder().encode(JSON.stringify(exportDoc()));
+    const packed=(typeof CompressionStream==="function")?"g"+b64u(await gzip(bytes)):"p"+b64u(bytes);
+    const url=location.href.split("#")[0]+"#plan="+packed;
+    if(url.length>60000){hint("This plan is too big for a link — send the plan file instead.","bad");return;}
+    await navigator.clipboard.writeText(url);
+    hint("Link copied ("+Math.round(url.length/1024)+"kB). Anyone opening it sees exactly this plan.","ok");
+  }catch(e){hint("Couldn't copy the link — use Download plan instead.","bad");}
+};
+/* a link only makes sense where the address bar is this page's own */
+if(window.self===window.top)document.getElementById("linkrow").hidden=false;
+
+async function loadFromHash(){
+  const m=/[#&]plan=([A-Za-z0-9\-_]+)/.exec(location.hash||"");
+  if(!m)return false;
+  try{
+    const kind=m[1][0],bytes=unb64u(m[1].slice(1));
+    const raw=(kind==="g")?await gunzip(bytes):bytes;
+    adoptDoc(JSON.parse(new TextDecoder().decode(raw)));
+    hint("Opened from a shared link. Download the plan if you want to keep it.","ok");
+    return true;
+  }catch(e){hint("That shared link couldn't be read.","bad");return false;}
+}
+
+/* offer back edits lost to a conflicting save */
+(function offerStash(){
+  let stash=null;
+  try{const raw=sessionStorage.getItem(STASH_KEY);if(raw)stash=JSON.parse(raw);}catch(e){}
+  if(!stash||!stash.plan||!stash.plan.projects)return;
+  let sSig;try{sSig=sigOf(stash.plan);}catch(e){try{sessionStorage.removeItem(STASH_KEY);}catch(e2){}return;}
+  const sameScenario=stash.viewId===viewId;
+  if(sSig===activeSig()&&sameScenario){try{sessionStorage.removeItem(STASH_KEY);}catch(e){}return;}
+  const box=document.getElementById("restore");
+  box.hidden=false;box.className="restore";
+  box.innerHTML="<b>Your unsaved scenario</b>Another save landed before yours, so this page reloaded to that version. Your edits are still here."
+    +'<div class="btnrow"><button class="btn primary" id="rst">Restore mine</button><button class="btn" id="rdis">Dismiss</button></div>';
+  document.getElementById("rst").onclick=()=>{
+    PROJECTS=hydrate(stash.plan.projects);S=leversOf(stash.plan.levers);
+    if(stash.viewId&&scById(stash.viewId))viewId=stash.viewId;
+    try{sessionStorage.removeItem(STASH_KEY);}catch(e){}
+    box.hidden=true;syncLevers();render();
+  };
+  document.getElementById("rdis").onclick=()=>{try{sessionStorage.removeItem(STASH_KEY);}catch(e){}box.hidden=true;};
+})();
+
+/* ================= compare table ================= */
+function paintCompare(){
+  const box=document.getElementById("compare");
+  document.getElementById("cmpToggle").textContent=showCompare?"Hide compare":"Compare";
+  if(!showCompare){box.hidden=true;box.innerHTML="";return;}
+  box.hidden=false;box.className="compare";
+  const rows=DOC.scenarios.map(sc=>({id:sc.id,name:sc.name,home:sc.id===DOC.activeId,
+    s:computeFor(hydrate(sc.projects),leversOf(sc.levers))}));
+  const dirty=isDirty();
+  if(dirty||!rows.length)rows.push({id:"__wip",name:scById(viewId)?scById(viewId).name+" (unsaved)":"Working view (unsaved)",
+    wip:true,s:computeFor(PROJECTS,S)});
+  let h=`<table><thead><tr><th>Scenario</th><th>Total need</th><th>Levy + grants</th><th>Boosters</th>
+    <th>Gap to close</th><th>Busiest year</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    let peak=0,pi=0;r.s.res.forEach((m,i)=>{if(m.total>peak){peak=m.total;pi=i;}});
+    h+=`<tr class="${r.wip?"wip":(r.id===viewId?"on":"")}">
+      <td class="cname">${esc(r.name)}${r.home?'<span class="tag">Landing</span>':""}</td>
+      <td class="n">${fmtK(r.s.need)}</td>
+      <td class="n">${fmtK(r.s.levyFunded)}</td>
+      <td class="n">${fmtK(r.s.spentByBucket.boost)}</td>
+      <td class="n gap ${r.s.gap>0?"":"ok"}">${r.s.gap>0?fmtK(r.s.gap):"covered"}</td>
+      <td class="n">${peak>0?YEARS[pi].fy+" · "+fmtK(peak):"—"}</td></tr>`;
+  });
+  h+=`</tbody></table>`;box.innerHTML=h;
+}
+
+/* ================= year columns ================= */
+const expanded=new Set();let showAllYears=false;
+const yearsEl=document.getElementById("years");
+function phasesIn(y){const out=[];PROJECTS.forEach(p=>p.phases.forEach((ph,i)=>{if(ph.year===y)out.push({p:p,ph:ph,i:i});}));return out;}
+function render(){
+  const C=computeFor(PROJECTS,S);
+  document.getElementById("needTot").textContent=fmtK(C.need).replace("$","");
+  let hiddenCount=0;
+  yearsEl.innerHTML="";
+  for(let y=0;y<N;y++){
+    const items=phasesIn(y);
+    const collapsed=!items.length&&!showAllYears&&!expanded.has(y);
+    const col=document.createElement("div");
+    col.className="year"+(collapsed?" collapsed":"");col.dataset.year=y;
+    if(collapsed){
+      hiddenCount++;
+      const banked=CAP_ORDER.reduce((a,b)=>a+Math.max(0,C.res[y].avail[b]-C.res[y].spend[b]),0);
+      col.innerHTML=`<button class="ycol" data-exp="${y}" title="Expand ${YEARS[y].fy}">
+        <span class="vfy">${YEARS[y].fy}</span><span class="vbank">banks ${fmtK(banked)}</span></button>`;
+      yearsEl.appendChild(col);continue;
+    }
+    const ytot=items.reduce((a,it)=>a+escalated(it.ph,S),0);
+    const ed=canEdit();
+    let h=`<div class="yhead"><div><div class="fy">${YEARS[y].fy}</div><div class="yr">${YEARS[y].yr}</div></div>
+      <span class="ytot num">${fmtK(ytot)}</span>
+      ${!items.length?`<button class="fold" data-fold="${y}" title="Collapse this year">×</button>`:""}</div><div class="plist">`;
+    if(!items.length)h+=`<div class="empty">Open year<br>drop here</div>`;
+    items.forEach(it=>{
+      const p=it.p,ph=it.ph,pi=it.i,multi=p.phases.length>1;
+      const bc=BUCKETS[ph.funding[0].b].color;
+      let splits="";
+      const cEsc=escalated(ph,S);
+      ph.funding.forEach((f,si)=>{
+        let opts="";
+        for(const k in BUCKETS){const star=p.rec.includes(k)?"★ ":"";opts+=`<option value="${k}" ${k===f.b?"selected":""}>${star}${BUCKETS[k].name}</option>`;}
+        const atypical=SOFT.includes(f.b)&&!p.rec.includes(f.b);
+        splits+=`<div class="split">
+          <select class="fb" data-id="${p.id}" data-pi="${pi}" data-si="${si}" style="background:${BUCKETS[f.b].color}" ${ed?"":"disabled"}>${opts}</select>
+          <input class="fp num" data-id="${p.id}" data-pi="${pi}" data-si="${si}" value="${f.p}" inputmode="numeric" ${ed?"":"disabled"}><span class="pctsign">%</span>
+          ${atypical?'<span class="warn" title="Atypical source for this project — confirm eligibility with the business manager.">⚠</span>':''}
+          <span class="sdollar num">${fmtK(cEsc*f.p/100)}</span>
+          ${ed&&ph.funding.length>1?`<button class="rm" data-id="${p.id}" data-pi="${pi}" data-si="${si}" title="Remove split">×</button>`:''}
+        </div>`;
+      });
+      const phN=multi?`<span class="phn">Ph ${p.phases.indexOf(ph)+1}/${p.phases.length}</span>`:"";
+      const priChip=p.pri?`<span class="pri p-${p.pri.replace(/[^A-Za-z0-9]/g,"")}">${esc(p.pri)}</span>`:"";
+      const first=p.phases.indexOf(ph)===0;
+      h+=`<div class="proj" style="border-left-color:${bc}">
+        <div class="ptop">
+          <span class="grip" draggable="${ed}" data-id="${p.id}" data-pi="${pi}" title="${ed?"Drag to another year":"Read-only"}">⠿</span>
+          <div class="pname" data-name="${p.id}" ${ed?'contenteditable="plaintext-only" role="textbox"':""}
+            title="${esc(p.name)}" aria-label="Project name">${esc(p.name)}</div>
+          ${ed&&first?`<button class="pdel" data-del="${p.id}" title="Delete this project">×</button>`:""}
+        </div>
+        <div class="ptags">${priChip}${p.est?'<span class="est">est</span>':''}${phN}${p.custom?'<span class="phn cus">added</span>':''}</div>
+        <div class="prow">
+          <span style="font-size:13px;color:var(--muted);font-weight:700">$</span>
+          <input class="cost num" data-id="${p.id}" data-pi="${pi}" value="${ph.cost.toLocaleString()}" inputmode="numeric" ${ed?"":"disabled"}>
+          <div class="mv">
+            <button data-mv="-1" data-id="${p.id}" data-pi="${pi}" ${(y===0||!ed)?"disabled":""} title="Move earlier">‹</button>
+            <button data-mv="1" data-id="${p.id}" data-pi="${pi}" ${(y===N-1||!ed)?"disabled":""} title="Move later">›</button>
+          </div>
+        </div>
+        ${S.infl>0&&y>0?`<div class="esc">→ ${fmtK(cEsc)} in ${YEARS[y].fy} at ${(S.infl*100).toFixed(1)}%/yr</div>`:""}
+        <div class="funding">${splits}
+          ${ed?`<div class="plinks">
+            <button class="addsplit" data-split="${p.id}" data-pi="${pi}" ${ph.funding.length>=3?"disabled":""}>+ split funding</button>
+            <button class="addsplit ph" data-phase="${p.id}" data-pi="${pi}" ${p.phases.length>=8?"disabled":""}>+ phase</button>
+            ${multi?`<button class="addsplit drop" data-drop="${p.id}" data-pi="${pi}" title="Fold this phase's money back into the previous phase">− phase</button>`:""}
+          </div>`:""}
+          ${p.rec.length?`<div class="rec">Rec: <b>${p.rec.map(b=>BUCKETS[b].name).join(" · ")}</b></div>`:""}
+        </div>
+      </div>`;
+    });
+    if(ed)h+=`<button class="newproj" data-new="${y}">+ New project in ${YEARS[y].fy}</button>`;
+    h+=`</div><div class="meters">`;
+    for(const b of CAP_ORDER){
+      if(b==="vppel"&&!S.vppel)continue;
+      /* a spent-out one-off pot (bond proceeds) stops taking up space */
+      if(b==="bondp"&&C.res[y].avail[b]<=0&&C.res[y].spend[b]<=0)continue;
+      const m=C.res[y],av=m.avail[b],sp=m.spend[b],over=m.over[b];
+      const pct=av>0?Math.min(100,sp/av*100):(sp>0?100:0);
+      h+=`<div class="mt">
+        <div class="mrow"><span class="mname" style="color:${BUCKETS[b].color}">${BUCKETS[b].name}</span>
+          <span class="mfig">${fmtK(sp)} / ${fmtK(av)}</span></div>
+        <div class="bar ${over>0?'over':''}"><span style="width:${pct}%;background:${BUCKETS[b].color}"></span></div>
+        ${over>0?`<div class="carry" style="color:var(--warn)">Over by ${fmtK(over)} — move a phase, split it, or lever up</div>`
+          :`<div class="carry">carry-in ${fmtK(m.carryIn[b])} + ${fmtK(inflow(b,y,S))} → banks ${fmtK(av-sp)}</div>`}
+      </div>`;
+    }
+    const ext=C.res[y].ext;
+    if(ext.boost||ext.camp){h+=`<div class="ext">`;
+      if(ext.camp)h+=`Campaign/Bond this year: <b>${fmtK(ext.camp)}</b>`;
+      if(ext.boost)h+=`${ext.camp?'<br>':''}Boosters: ${fmtK(ext.boost)}`;h+=`</div>`;}
+    h+=`</div>`;col.innerHTML=h;yearsEl.appendChild(col);
+  }
+  document.getElementById("hidden-note").textContent=hiddenCount
+    ?hiddenCount+" empty year"+(hiddenCount>1?"s":"")+" collapsed — click one to open it, or drop a project on it."
+    :"All years shown.";
+  document.getElementById("showall").textContent=showAllYears?"Collapse empty years":"Show all 10 years";
+
+  const leg=document.getElementById("legend");leg.innerHTML="";
+  for(const k in BUCKETS){const row=document.createElement("div");row.className="lg";
+    row.innerHTML=`<span class="sw" style="background:${BUCKETS[k].color}"></span><span>${BUCKETS[k].name}</span><span class="amt num">${fmtK(C.spentByBucket[k])}</span>`;
+    leg.appendChild(row);}
+  const v=document.getElementById("verdict");
+  if(C.gap>0){
+    v.className="verdict short";
+    const hint=!S.vppel?'Next: switch on V-PPEL, then move items off Campaign onto it.'
+      :(C.spentByBucket.camp>0?'Now move or split Campaign items onto V-PPEL or banked SAVE, or phase them across two years.':'Move the over-capacity phase to a year with banked room.');
+    v.innerHTML=`<div class="label">Gap to close</div><div class="big num">${fmtK(C.gap)}</div>
+      <div class="sub">Falls outside levy + grant capacity over the ten years. Close it with a campaign or bond,
+      or by rescoping, phasing or rescheduling — it's a wish list, not a mandate. ${hint}</div>`;
+  }else{
+    const capAvail=CAP_ORDER.reduce((a,b)=>a+OPEN[b]+YEARS.reduce((s,_,y)=>s+inflow(b,y,S),0),0);
+    v.className="verdict ok";
+    v.innerHTML=`<div class="label">Fits within capacity</div><div class="big num">${fmtK(capAvail-C.levyFunded)}</div>
+      <div class="sub">of levy + grant capacity left over across FY2027–FY2036, with $0 needing campaign or bond.</div>`;
+  }
+  wire();paintScenarios();paintSaver();paintCompare();paintDiag();paintSB();
+}
+function paint(){render();}
+const findP=id=>PROJECTS.find(x=>x.id==id);
+function wire(){
+  const q=(sel,fn)=>document.querySelectorAll(sel).forEach(fn);
+  q("select.fb",s=>s.onchange=e=>{const d=e.target.dataset;findP(d.id).phases[+d.pi].funding[+d.si].b=e.target.value;render();});
+  q("input.fp",inp=>{
+    inp.onblur=e=>{const d=e.target.dataset;setPct(findP(d.id).phases[+d.pi],+d.si,parseInt(e.target.value.replace(/[^0-9]/g,""),10)||0);render();};
+    inp.onkeydown=e=>{if(e.key==="Enter")e.target.blur();};});
+  q("[data-split]",b=>b.onclick=e=>{const d=e.currentTarget.dataset;const p=findP(d.split);addSplit(p,p.phases[+d.pi]);render();});
+  q("[data-phase]",b=>b.onclick=e=>{const d=e.currentTarget.dataset;addPhase(findP(d.phase),+d.pi);render();});
+  q("[data-drop]",b=>b.onclick=e=>{const d=e.currentTarget.dataset;removePhase(findP(d.drop),+d.pi);render();});
+  q(".rm",b=>b.onclick=e=>{const d=e.currentTarget.dataset;removeSplit(findP(d.id).phases[+d.pi],+d.si);render();});
+  q(".cost",inp=>{
+    inp.onblur=e=>{const d=e.target.dataset;const n=parseInt(e.target.value.replace(/[^0-9]/g,""),10);
+      findP(d.id).phases[+d.pi].cost=isNaN(n)?0:n;render();};
+    inp.onkeydown=e=>{if(e.key==="Enter")e.target.blur();};});
+  q(".mv button",b=>b.onclick=e=>{const d=e.currentTarget.dataset;const ph=findP(d.id).phases[+d.pi];
+    ph.year=Math.max(0,Math.min(N-1,ph.year+parseInt(d.mv,10)));findP(d.id).phases.sort((a,b2)=>a.year-b2.year);render();});
+  q(".grip",el=>el.ondragstart=e=>{e.dataTransfer.setData("text/plain",el.dataset.id+":"+el.dataset.pi);e.dataTransfer.effectAllowed="move";});
+  /* rename in place — commit on blur or Enter, revert on Escape */
+  q("[data-name]",el=>{
+    if(!el.isContentEditable)return;
+    el.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();el.blur();}
+      if(e.key==="Escape"){el.textContent=findP(el.dataset.name).name;el.blur();}};
+    /* keep pasted text plain even where plaintext-only isn't honoured */
+    el.onpaste=e=>{e.preventDefault();
+      const t=(e.clipboardData||window.clipboardData).getData("text").replace(/\s+/g," ");
+      document.execCommand("insertText",false,t.slice(0,70));};
+    el.onblur=()=>{const p=findP(el.dataset.name);if(!p)return;
+      const v=(el.textContent||"").replace(/\s+/g," ").trim().slice(0,70);
+      if(!v){el.textContent=p.name;return;}
+      if(v===p.name){el.textContent=p.name;return;}
+      p.name=v;render();};
+  });
+  q("[data-del]",b=>b.onclick=e=>{
+    const btn=e.currentTarget,id=btn.dataset.del;
+    if(btn.dataset.armed!=="1"){btn.dataset.armed="1";btn.textContent="Delete?";btn.classList.add("armed");
+      setTimeout(()=>{if(btn.isConnected){btn.dataset.armed="";btn.textContent="×";btn.classList.remove("armed");}},4000);return;}
+    PROJECTS=PROJECTS.filter(x=>x.id!=id);render();});
+  q("[data-new]",b=>b.onclick=e=>{
+    const y=+e.currentTarget.dataset.new;
+    const id=Math.max(1000,...PROJECTS.map(p=>Number(p.id)||0))+1;
+    PROJECTS.push({id:id,name:"New project",pri:"",est:true,custom:true,rec:[],
+      phases:[{cost:0,year:y,funding:[{b:"save",p:100}]}]});
+    render();
+    const el=document.querySelector('[data-name="'+id+'"]');
+    if(el){el.focus();
+      try{const r=document.createRange();r.selectNodeContents(el);
+        const s=window.getSelection();s.removeAllRanges();s.addRange(r);}catch(e2){}}});
+  q("[data-exp]",b=>b.onclick=e=>{expanded.add(+e.currentTarget.dataset.exp);render();});
+  q("[data-fold]",b=>b.onclick=e=>{expanded.delete(+e.currentTarget.dataset.fold);render();});
+  q(".year",col=>{
+    col.ondragover=e=>{if(!canEdit())return;e.preventDefault();col.classList.add("dragover");};
+    col.ondragleave=()=>col.classList.remove("dragover");
+    col.ondrop=e=>{e.preventDefault();col.classList.remove("dragover");
+      if(!canEdit())return;
+      const parts=(e.dataTransfer.getData("text/plain")||"").split(":");
+      const p=findP(parts[0]);if(!p)return;
+      const ph=p.phases[+parts[1]];if(!ph)return;
+      ph.year=parseInt(col.dataset.year,10);p.phases.sort((a,b)=>a.year-b.year);
+      expanded.add(ph.year);render();};
+  });
+}
+
+/* ================= levers ================= */
+function syncLevers(){
+  document.getElementById("vppel").checked=!!S.vppel;
+  document.getElementById("pg").value=(S.pg*100).toFixed(1);
+  document.getElementById("pgv").textContent=(S.pg*100).toFixed(1)+"%";
+  document.getElementById("gy").value=Math.round(S.gy*100);
+  document.getElementById("gyv").textContent=Math.round(S.gy*100)+"%";
+  document.getElementById("sg").value=(S.sg*100).toFixed(1);
+  document.getElementById("sgv").textContent=(S.sg*100).toFixed(1)+"%";
+  document.getElementById("infl").value=(S.infl*100).toFixed(1);
+  document.getElementById("iv").textContent=(S.infl*100).toFixed(1)+"%";
+}
+document.getElementById("vppel").onchange=e=>{S.vppel=e.target.checked;render();};
+document.getElementById("pg").oninput=e=>{S.pg=+e.target.value/100;document.getElementById("pgv").textContent=(+e.target.value).toFixed(1)+"%";render();};
+document.getElementById("gy").oninput=e=>{S.gy=+e.target.value/100;document.getElementById("gyv").textContent=e.target.value+"%";render();};
+document.getElementById("sg").oninput=e=>{S.sg=+e.target.value/100;document.getElementById("sgv").textContent=(+e.target.value).toFixed(1)+"%";render();};
+document.getElementById("infl").oninput=e=>{S.infl=+e.target.value/100;document.getElementById("iv").textContent=(+e.target.value).toFixed(1)+"%";render();};
+document.getElementById("showall").onclick=()=>{showAllYears=!showAllYears;render();};
+
+document.getElementById("foot").innerHTML=
+  `<b>Where these projects come from.</b> Every row is a capital item from the district's
+   <b>Comprehensive Improvement Plan – Timeline</b> spreadsheet, carrying that sheet's cost, completion date,
+   priority and funding source. Operating items — staffing, programs, curriculum, the marketing position — are
+   General Fund, not capital, and are not shown. Where the sheet says <b>TBD</b> or gives a range, the figure here
+   is a planning estimate tagged <span style="color:var(--boost);font-weight:700">est</span>. The sheet's three
+   <b>10-Year Goals</b> (indoor athletic space, fine arts, secure entrances) are all priced TBD there, so they sit
+   in FY2036 at $0 — visible and unpriced beats invisible. <b>Two new vans</b> is read as $67,500 <i>per</i> van
+   for Summer 2027 and Summer 2029; if the sheet's $60–75k was the total for both, halve each phase.
+   <b>Scenarios.</b> <b>District original (spreadsheet)</b> 🔒 is locked: it reproduces the sheet exactly, without
+   the roof program, and nothing in the interface can change it — press <b>Duplicate</b> to explore from it. Save
+   as many other scenarios as you like and switch between them from the rail. <b>Compare</b> puts them side by side
+   on total need, levy-funded amount and gap to close. The one marked ⌂ is the <b>landing view</b>: what a board
+   member sees when they open this page.
+   <b>Projects.</b> Click a project's name to rename it, <b>×</b> to delete it (press twice), or
+   <b>+ New project</b> at the foot of a year to add one. Changes belong to the scenario you're in.
+   <b>Sharing.</b> Anyone you send the link to gets the whole tool: they can drag projects, change costs, phase
+   things, re-fund them and move every slider, and the meters and gap recalculate as they go. What they cannot do
+   is <i>save</i> — their version lives in their browser, is invisible to everyone else, and resets when they close
+   the tab. So a board member can sit with this and test their own idea without any risk of altering the plan. Only
+   the owner's saves change what the rest of us see. If two editors save at once the later save is refused, the page
+   reloads to the version that won, and the refused edits are offered back.
+   <b>Bond Proceeds</b> is the remainder of the previously passed GO bond, held in the Capital Projects fund — money
+   already in hand, so it takes no annual inflow and simply runs down. The science remodel is funded from it. The
+   opening balance is set to $700,000 to match that project and <b>needs confirming</b>: the FY2025-26 certified
+   budget shows $4,050,000 in Capital Projects, and the two figures have to be reconciled with the business manager.
+   <b>Ten years.</b> FY2027–FY2036. Years with nothing in them collapse to a strip showing what that year banks —
+   click one, or drop a project on it, to open it. <b>V-PPEL</b> is modelled only for its stated FY2028–FY2031
+   collection window; if the board would renew it, that is a decision to make explicitly, not a default here.
+   <b>Phases.</b> <b>+ phase</b> splits a project in two, moving half the money to the next open year; give each
+   phase its own amount and its own funding mix. <b>− phase</b> folds a phase's money back into the one before it,
+   so the project total never changes by accident. The playground is entered as a single line even though the
+   district describes it as a 4-year plan — phase it once you have the per-year figures.
+   <b>Roof Replacement Program</b> is <i>not</i> in the district CIP Timeline. It comes from the Elevate Roofing
+   report of 10 July 2026, which puts five of the fifteen roof sections at end of life inside this window:
+   Section 12 (1–2 yrs) and Sections 8 and 11 (1–3 yrs), Section 5 (2–3 yrs), Section 6 (3–5 yrs). The other ten
+   sections have 20+ years. The three phases group them by urgency and by what makes a sensible bid package —
+   FY2028: Sections 12 + 8; FY2029: Sections 11 + 5; FY2031: Section 6. <b>The dollar figures are the weakest
+   numbers on this page.</b> The report gives no square footage, so areas were scaled off its section map
+   (~55,000 sf across the five, ±20%) and priced at ~$14/sf all-in for an Iowa public-school reroof — tear-off,
+   R-25 insulation, membrane, edge metal, bid and design fees, contingency. Ask Elevate for measured section
+   areas; that one number turns a ±35% range into a ±10% one.
+   <b>Inflation</b> is off by default so the costs here match the CIP document. The district analysis assumes ~4%/yr
+   construction inflation; with the lever on, each phase shows what it costs in the year it lands.
+   <b>Funding sources</b> default to what the district CIP Timeline names for each project (★). Because every item
+   here is capital — buildings, site work, grounds, equipment — SAVE, PPEL, V-PPEL, and Campaign/Bond are all
+   legally eligible everywhere; the one hard Iowa rule (no salaries on PPEL or SAVE) doesn't apply, since positions
+   and programs (FFA, art, STEM startup) are General-Fund operating and aren't in this capital view. A ⚠ flags soft
+   money (grants, boosters, campaign) used off its usual purpose.
+   <b>Meters</b> start with each levy's balance, add that year's net inflow (SAVE income less debt service — which
+   ends after FY2030 — less $175k ongoing; PPEL grown at the slider less $20k) and bank the rest forward.
+   <b>Estimates</b> tagged <span style="color:var(--boost);font-weight:700">est</span> are timeline TBDs (±30–50%).
+   Vehicles and salaries are funded outside this capital view. Confirm eligibility and any soft-money assumption
+   with the business manager before the board leans on a scenario.`;
+
+syncLevers();
+render();
+
+/* resolve the save capability last, so the planner works even without it */
+(async()=>{
+  /* The shell can install window.claude a moment after the document runs, and a
+     cold load is slower than a warm one. Resolving once and latching read-only
+     for good is how a perfectly writable page ends up with no controls, so keep
+     trying for a few seconds and record what happened. */
+  await sbBoot();        /* the shared plan is the source of truth when reachable */
+  paintSB();
+  await loadFromHash();  /* ...but a #plan= link the user opened wins over both */
+  async function resolveArt(tries){
+    for(let i=0;i<tries;i++){
+      DIAG.attempts=i+1;
+      DIAG.shell=!!(window.claude&&window.claude.use);
+      if(DIAG.shell){
+        try{const a=await window.claude.use("artifact");
+          if(a){DIAG.capability="granted";return a;}
+          DIAG.capability="use() returned null";}
+        catch(e){DIAG.capability="use() threw: "+((e&&e.message)||e);}
+      }else DIAG.capability="window.claude absent";
+      paintDiag();
+      await new Promise(r=>setTimeout(r,400));
+    }
+    return null;
+  }
+  ART=await resolveArt(6);
+  if(!ART){NOCLAUDE=!DIAG.shell;goReadOnly();}
+  else{
+    READONLY=false;
+    JUSTSAVED=!!(DOC.savedAt&&Date.now()-new Date(DOC.savedAt).getTime()<20000);
+    paintSaver();
+    if(JUSTSAVED)setTimeout(()=>{JUSTSAVED=false;paintSaver();},6000);
+    render(); /* controls were drawn before the capability resolved */
+  }
+  paintDiag();
+  /* a read-only verdict is never final — one more try when they ask for it */
+  const rt=document.getElementById("retryart");
+  if(rt)rt.onclick=async()=>{rt.disabled=true;rt.textContent="Checking…";
+    const a=await resolveArt(4);
+    if(a){ART=a;READONLY=false;NOCLAUDE=false;ERRMSG="";render();}
+    else{rt.disabled=false;rt.textContent="Retry connection";}
+    paintDiag();};
+})();
+</script>
+
+</body>
+</html>
