@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 <title>Lo-Ma Capital Plan Explorer</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cg%20fill%3D%22%234F2170%22%3E%3Cellipse%20cx%3D%2232%22%20cy%3D%2245%22%20rx%3D%2215%22%20ry%3D%2212%22%2F%3E%3Cellipse%20cx%3D%2213%22%20cy%3D%2229%22%20rx%3D%227%22%20ry%3D%229%22%2F%3E%3Cellipse%20cx%3D%2225%22%20cy%3D%2218%22%20rx%3D%227%22%20ry%3D%2210%22%2F%3E%3Cellipse%20cx%3D%2239%22%20cy%3D%2218%22%20rx%3D%227%22%20ry%3D%2210%22%2F%3E%3Cellipse%20cx%3D%2251%22%20cy%3D%2229%22%20rx%3D%227%22%20ry%3D%229%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -90,10 +91,11 @@
   .confirm{border:1px solid var(--warn);background:#FBF0F0;border-radius:7px;padding:9px 10px;font-size:12.5px;margin-bottom:9px;line-height:1.35}
   .stat{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;line-height:1.35;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:11px}
   .stat .dot{width:9px;height:9px;border-radius:50%;flex:none;margin-top:4px;background:var(--ok)}
-  .stat b{display:block;color:var(--ink);font-weight:600;font-size:13px}
-  .saver.is-dirty .stat .dot{background:var(--boost)} .saver.is-dirty .stat b{color:var(--boost)}
+  .stat b{color:var(--ink);font-weight:600}
+  .stat b:first-child{display:block;font-size:13px}
+  .saver.is-dirty .stat .dot{background:var(--boost)} .saver.is-dirty .stat b:first-child{color:var(--boost)}
   .saver.is-ro .stat .dot{background:var(--line2)}
-  .saver.is-err .stat .dot{background:var(--warn)} .saver.is-err .stat b{color:var(--warn)}
+  .saver.is-err .stat .dot{background:var(--warn)} .saver.is-err .stat b:first-child{color:var(--warn)}
   .sbbox{margin-top:10px;border-top:1px solid var(--line);padding-top:9px}
   .sbstat{font-size:12px;color:var(--muted);line-height:1.4}
   .sbstat b{display:block;color:var(--ink);font-weight:600;font-size:13px}
@@ -180,7 +182,7 @@
   .newproj:hover{background:#F8F4FC;border-color:var(--save)}
   .saver.is-locked{border-color:var(--bank);box-shadow:inset 3px 0 0 var(--bank)}
   .saver.is-locked .stat .dot{background:var(--bank)}
-  .saver.is-locked .stat b{color:var(--bank)}
+  .saver.is-locked .stat b:first-child{color:var(--bank)}
   .sc .lockmark{font-size:11px;color:var(--bank);flex:none}
   .proj .est{font-family:var(--disp);font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--boost);border:1px solid var(--boost);border-radius:3px;padding:0 3px;margin-left:5px;vertical-align:middle;text-transform:uppercase}
   .proj .phn{font-family:var(--disp);font-size:9px;font-weight:700;letter-spacing:.06em;color:var(--save);background:#F1E9F7;border-radius:3px;padding:1px 4px;margin-left:5px;vertical-align:middle;text-transform:uppercase}
@@ -1526,6 +1528,7 @@ const SHELL=`
           <div id="scwrap"></div>
           <div class="btnrow" id="saverow1"><button class="btn primary" id="save">Save</button><button class="btn" id="saveas">Save as…</button></div>
           <div class="btnrow tight" id="saverow2"><button class="btn sm" id="rename">Rename</button><button class="btn sm" id="dupe">Duplicate</button><button class="btn sm danger" id="del">Delete</button></div>
+          <div class="btnrow tight" id="lockrow" hidden><button class="btn sm" id="locktoggle">Lock this scenario</button></div>
           <div class="landnote" id="landrow" hidden><span id="landtxt"></span>
             <div class="btnrow tight"><button class="btn sm primary" id="setland">Open on this one</button></div></div>
           <div class="stat"><span class="dot"></span><span id="sstat"></span></div>
@@ -1602,6 +1605,7 @@ function renderDoc(state){
   return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n'
     +'<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
     +'<title>Lo-Ma Capital Plan Explorer<\/title>\n'
+    +'<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cg%20fill%3D%22%234F2170%22%3E%3Cellipse%20cx%3D%2232%22%20cy%3D%2245%22%20rx%3D%2215%22%20ry%3D%2212%22%2F%3E%3Cellipse%20cx%3D%2213%22%20cy%3D%2229%22%20rx%3D%227%22%20ry%3D%229%22%2F%3E%3Cellipse%20cx%3D%2225%22%20cy%3D%2218%22%20rx%3D%227%22%20ry%3D%2210%22%2F%3E%3Cellipse%20cx%3D%2239%22%20cy%3D%2218%22%20rx%3D%227%22%20ry%3D%2210%22%2F%3E%3Cellipse%20cx%3D%2251%22%20cy%3D%2229%22%20rx%3D%227%22%20ry%3D%229%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">\n'
     +'<link rel="preconnect" href="https://fonts.googleapis.com">\n'
     +'<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
     +'<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">\n'
@@ -1648,6 +1652,13 @@ function paintDiag(){
     ${READONLY?'<div class="btnrow tight"><button class="btn sm" id="retryart">Retry connection</button></div>':""}`;
 }
 /* the district original is read-only: duplicate it to explore */
+/* the spreadsheet-validated baseline; other scenarios can be locked too, but
+   only this one carries the "reproduces the sheet" claim */
+const ORIG_ID="orig";
+const isOrig=()=>viewId===ORIG_ID;
+/* Locking is a change to the shared document, so it is only offered to someone
+   whose save actually reaches everyone. A browser-only lock would be a lie. */
+const sharedWriter=()=>(SB.on&&!!SB.token)||(!!ART&&!READONLY);
 const isLocked=()=>{const sc=scById(viewId);return !!(sc&&sc.locked);};
 /* Being unable to SAVE is not a reason to be unable to EDIT. A viewer without
    write access gets the whole tool — drag, phase, re-fund, run what-ifs — in
@@ -1672,7 +1683,7 @@ async function publishDoc(mutate,nextView){
     if(nextView)viewId=nextView;
     if(!scById(viewId))viewId=DOC.scenarios[0]?DOC.scenarios[0].id:null;
     loadInto(scById(viewId));
-    FILEDIRTY=true;ERRMSG="";nameMode=null;confirmDel=false;pendingSwitch=null;
+    FILEDIRTY=true;ERRMSG="";nameMode=null;confirmDel=false;confirmUnlock=false;pendingSwitch=null;
     syncLevers();render();
     hint("Scenario list updated in this browser. Press <b>Download plan</b> to keep it.","ok");
     return;
@@ -1723,7 +1734,7 @@ function saveAsNew(name){
 }
 
 /* ================= scenario rail ================= */
-let nameMode=null,confirmDel=false,showCompare=false,pendingSwitch=null;
+let nameMode=null,confirmDel=false,showCompare=false,pendingSwitch=null,confirmUnlock=false;
 const scwrap=document.getElementById("scwrap");
 function startName(mode,seed){nameMode={mode:mode,seed:seed};confirmDel=false;paint();
   const i=document.getElementById("nminput");if(i){i.focus();i.select();}}
@@ -1733,6 +1744,12 @@ function paintScenarios(){
     const sc=scById(viewId);
     h+=`<div class="confirm"><b>Delete “${esc(sc?sc.name:"")}”?</b> This removes it for everyone.
       <div class="btnrow tight"><button class="btn sm danger" id="delyes">Delete</button><button class="btn sm" id="delno">Keep</button></div></div>`;
+  }
+  if(confirmUnlock){
+    h+=`<div class="confirm"><b>Unlock the district original?</b> It reproduces the CIP Timeline
+      spreadsheet exactly, and it's what every other scenario is measured against. Once it's unlocked,
+      anyone signed in can change it — and nothing in this page can rebuild it from the sheet.
+      <div class="btnrow tight"><button class="btn sm danger" id="ulyes">Unlock it</button><button class="btn sm" id="ulno">Leave it locked</button></div></div>`;
   }
   if(pendingSwitch){
     const to=scById(pendingSwitch);
@@ -1750,7 +1767,7 @@ function paintScenarios(){
     DOC.scenarios.forEach(sc=>{
       const sum=computeFor(hydrate(sc.projects),leversOf(sc.levers));
       const home=sc.id===DOC.activeId?`<span class="home" title="The board lands on this one">⌂</span>`:"";
-      const lk=sc.locked?`<span class="lockmark" title="Read-only original">🔒</span>`:"";
+      const lk=sc.locked?`<span class="lockmark" title="Locked — read-only for everyone">🔒</span>`:"";
       h+=`<button class="sc ${sc.id===viewId?"on":""}" data-sc="${sc.id}">
         <span class="nm">${esc(sc.name)}</span>${lk}${home}
         <span class="gap num ${sum.gap>0?"":"ok"}">${sum.gap>0?fmtK(sum.gap):"covered"}</span></button>`;
@@ -1783,6 +1800,12 @@ function paintScenarios(){
         land?land.id:"");};
     document.getElementById("delno").onclick=()=>{confirmDel=false;paint();};
   }
+  const uy=document.getElementById("ulyes");
+  if(uy){
+    uy.onclick=()=>{confirmUnlock=false;
+      publishDoc(d=>{const t=d.scenarios.find(x=>x.id===viewId);if(t)delete t.locked;});};
+    document.getElementById("ulno").onclick=()=>{confirmUnlock=false;paint();};
+  }
   const sy=document.getElementById("swyes");
   if(sy){
     sy.onclick=()=>{const id=pendingSwitch;pendingSwitch=null;doSwitch(id);};
@@ -1790,7 +1813,7 @@ function paintScenarios(){
   }
 }
 function doSwitch(id){
-  viewId=id;loadInto(scById(id));nameMode=null;confirmDel=false;pendingSwitch=null;ERRMSG="";syncLevers();render();
+  viewId=id;loadInto(scById(id));nameMode=null;confirmDel=false;confirmUnlock=false;pendingSwitch=null;ERRMSG="";syncLevers();render();
 }
 function switchTo(id){
   if(id===viewId)return;
@@ -1807,15 +1830,21 @@ function paintSaver(){
   const locked=isLocked();
   saverEl.classList.toggle("is-locked",locked);
   let html;
+  /* Order matters. "Locked" is the strongest statement the panel can make about
+     this scenario, so it comes before the read-only-runtime messages — otherwise
+     the generic "your own copy" text swallows it and the lock looks like a bug. */
   if(ERRMSG)html="<b>Not saved</b>"+ERRMSG;
+  else if(locked&&dirty)html="<b>This scenario is locked</b>Your changes can't be saved onto “"+esc(sc.name)+"”. Press <b>Duplicate</b> to keep them as a new scenario"+(sharedWriter()?", or <b>Unlock this scenario</b> first.":".");
+  else if(locked)html=(isOrig()
+      ?"<b>District original — read-only</b>Validated against the CIP Timeline spreadsheet — it's the reference every other scenario is compared back to. "
+      :"<b>Locked — read-only</b>“"+esc(sc.name)+"” is locked for everyone, so it stays put as a reference. ")
+    +(sharedWriter()
+      ?"<b>Duplicate</b> it to explore changes, or press <b>Unlock this scenario</b> to open it up for everyone."
+      :"Pick another scenario above, or press <b>Duplicate</b>, and you can change anything you like in your own copy.");
   else if(SB.on&&!SB.token&&dirty)html="<b>Unsaved changes</b>Only in your browser. <b>Save as…</b> keeps them here, <b>Download plan</b> writes them to a file. To save for everyone, sign in under <b>Shared plan</b>.";
   else if(READONLY&&dirty)html="<b>Unsaved changes</b>"+(sc?"Press <b>Save</b> to keep them in “"+esc(sc.name)+"”, or <b>Save as…</b> to start a new scenario. Then <b>Download plan</b> to keep the whole set.":"Press <b>Save as…</b> to name this as a scenario.");
   else if(READONLY&&FILEDIRTY)html="<b>Saved in this browser</b>Your scenarios are up to date here, but this page can't store them. Press <b>Download plan</b> — that file is the permanent copy.";
   else if(READONLY)html="<b>Your own copy</b>Build as many scenarios as you like: Save, Save as…, Rename, Duplicate, Delete all work. They live in this browser only — <b>Download plan</b> writes the whole set to a file you can keep, mail, or load again.";
-  else if(locked&&READONLY)html="<b>District original — read-only</b>This one is locked for everyone: it reproduces the CIP Timeline spreadsheet exactly. Pick another scenario above and you can change anything you like in your own copy.";
-  else if(locked&&dirty)html="<b>Original is read-only</b>Your changes can't be saved onto the district original. Press <b>Duplicate</b> to keep them as a new scenario.";
-  else if(locked)html="<b>District original — read-only</b>Validated against the CIP Timeline spreadsheet. Duplicate it to explore changes.";
-  
   else if(BUSY)html="<b>Saving…</b>The page will reload to the saved version.";
   else if(dirty)html="<b>Unsaved changes</b>"+(sc?"“"+esc(sc.name)+"” was last saved "+fmtWhen(sc.savedAt)+". Press Save to keep them.":"Nothing saved yet — this is the district baseline.");
   else if(JUSTSAVED&&sc)html="<b>Saved ✓</b>“"+esc(sc.name)+"” saved "+fmtWhen(sc.savedAt)+". Everyone opening this page sees it.";
@@ -1839,6 +1868,21 @@ function paintSaver(){
   document.getElementById("discard").disabled=BUSY||!dirty;
   document.getElementById("discard").textContent=READONLY?"Undo my changes":"Discard changes";
   document.getElementById("reset").disabled=BUSY||locked;
+  /* Lock/unlock: shown only to someone who can save for everyone, and kept
+     enabled while locked so the lock is always reversible from the interface. */
+  const lockRow=document.getElementById("lockrow"),lockBtn=document.getElementById("locktoggle");
+  const canLock=sharedWriter()&&!!sc;
+  lockRow.hidden=!canLock;
+  if(canLock){
+    lockBtn.textContent=locked?"Unlock this scenario":"Lock this scenario";
+    lockBtn.classList.toggle("primary",locked);
+    const blocked=BUSY||(dirty&&!locked);
+    lockBtn.disabled=blocked;
+    lockBtn.title=BUSY?"Saving…":
+      (dirty&&!locked)?"Save or discard your changes first — locking saves the scenario as it stands":
+      locked?"Let everyone edit and overwrite \u201c"+sc.name+"\u201d again":
+      "Make \u201c"+sc.name+"\u201d read-only for everyone, here and on every other browser";
+  }
   ["vppel","pg","gy","sg","infl"].forEach(k=>{const el=document.getElementById(k);if(el)el.disabled=locked||BUSY;});
   /* A saved scenario that isn't the landing view is the classic "my changes
      vanished": the work is saved, but a fresh browser opens on a different
@@ -1860,6 +1904,16 @@ document.getElementById("dupe").onclick=()=>startName("dupe",(scById(viewId)?scB
 document.getElementById("del").onclick=()=>{confirmDel=true;nameMode=null;paint();};
 document.getElementById("setland").onclick=()=>publishDoc(d=>{d.activeId=viewId;});
 document.getElementById("discard").onclick=()=>{loadInto(scById(viewId));ERRMSG="";syncLevers();render();};
+document.getElementById("locktoggle").onclick=()=>{
+  const sc=scById(viewId);
+  if(!sc||BUSY||!sharedWriter())return;
+  const willLock=!sc.locked;
+  if(willLock&&isDirty())return; /* never lock in a state the viewer cannot see saved */
+  /* The original is the only scenario nothing here can rebuild. Unlocking it is
+     one click away from losing the baseline, so it gets a confirmation. */
+  if(!willLock&&isOrig()){confirmUnlock=true;confirmDel=false;paint();return;}
+  publishDoc(d=>{const t=d.scenarios.find(x=>x.id===viewId);if(t){if(willLock)t.locked=true;else delete t.locked;}});
+};
 document.getElementById("reset").onclick=()=>{if(isLocked())return;PROJECTS=clone(DEFAULT_PROJECTS);S=Object.assign({},DEFAULT_LEVERS);syncLevers();render();};
 document.getElementById("cmpToggle").onclick=()=>{showCompare=!showCompare;paint();};
 window.addEventListener("beforeunload",e=>{if(BUSY)return;
