@@ -32,7 +32,7 @@
   header.top{border-bottom:3px solid var(--ink);padding-bottom:14px;margin-bottom:18px}
   .kicker{font-family:var(--disp);text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--save);font-weight:700}
   header.top h1{margin:.1em 0 .15em;font-size:30px;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
-  header.top p{margin:0;color:var(--muted);max-width:78ch;font-size:14px}
+  header.top p{margin:0;color:var(--muted);max-width:none;font-size:14px}
   .layout{display:grid;grid-template-columns:296px minmax(0,1fr);gap:20px;align-items:start}
   .rail{position:sticky;top:16px;display:flex;flex-direction:column;gap:16px;max-height:calc(100vh - 32px);overflow-y:auto;padding-right:2px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:15px}
@@ -225,6 +225,9 @@
   .ext{font-size:11px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line2);font-variant-numeric:tabular-nums}
   .ext b{color:var(--camp)}
   .foot{margin-top:22px;font-size:12px;color:var(--muted);line-height:1.5;max-width:100ch}
+  .stamp{margin-top:14px;padding-top:10px;border-top:1px solid var(--line);font-family:var(--disp);
+    font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .stamp b{color:var(--save);font-weight:700}
   .foot b{color:var(--ink)}
   @media (max-width:1100px){.layout{grid-template-columns:1fr}.rail{position:static;max-height:none;overflow:visible}.year{flex:0 0 250px}}
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -237,7 +240,7 @@
  "scenarios": [
   {
    "id": "orig",
-   "name": "District original (spreadsheet)",
+   "name": "District Original",
    "locked": true,
    "savedAt": "2026-08-24T18:50:22Z",
    "levers": null,
@@ -1516,9 +1519,8 @@ const SHELL=`
         multi-year <b>phases</b>. Unspent levy room <b>banks forward</b>. Anything the levies and grants can't cover
         shows up as a <b>gap to close</b> — settle it with a campaign or bond, or by moving or trimming projects.
         Add, rename or remove projects as the plan changes. It's a wish list, not a mandate. Save any number of
-        named <b>scenarios</b>; the one you mark as the landing view is what the board sees when they open this
-        page. <b>District original (spreadsheet)</b> is locked — it's the reference every other scenario is compared
-        back to. Sign in under <b>Shared plan</b> to save for everyone; otherwise changes stay in your browser.</p>
+        named <b>scenarios</b>. <b>District Original</b> is locked — it's the reference every other scenario is compared back to.
+        Sign in under <b>Shared plan</b> to save for everyone; otherwise changes stay in your browser.</p>
     </header>
     <div class="layout">
       <aside class="rail">
@@ -1746,7 +1748,7 @@ function paintScenarios(){
       <div class="btnrow tight"><button class="btn sm danger" id="delyes">Delete</button><button class="btn sm" id="delno">Keep</button></div></div>`;
   }
   if(confirmUnlock){
-    h+=`<div class="confirm"><b>Unlock the district original?</b> It reproduces the CIP Timeline
+    h+=`<div class="confirm"><b>Unlock District Original?</b> It reproduces the CIP Timeline
       spreadsheet exactly, and it's what every other scenario is measured against. Once it's unlocked,
       anyone signed in can change it — and nothing in this page can rebuild it from the sheet.
       <div class="btnrow tight"><button class="btn sm danger" id="ulyes">Unlock it</button><button class="btn sm" id="ulno">Leave it locked</button></div></div>`;
@@ -1836,7 +1838,7 @@ function paintSaver(){
   if(ERRMSG)html="<b>Not saved</b>"+ERRMSG;
   else if(locked&&dirty)html="<b>This scenario is locked</b>Your changes can't be saved onto “"+esc(sc.name)+"”. Press <b>Duplicate</b> to keep them as a new scenario"+(sharedWriter()?", or <b>Unlock this scenario</b> first.":".");
   else if(locked)html=(isOrig()
-      ?"<b>District original — read-only</b>Validated against the CIP Timeline spreadsheet — it's the reference every other scenario is compared back to. "
+      ?"<b>District Original — read-only</b>Validated against the CIP Timeline spreadsheet — it's the reference every other scenario is compared back to. "
       :"<b>Locked — read-only</b>“"+esc(sc.name)+"” is locked for everyone, so it stays put as a reference. ")
     +(sharedWriter()
       ?"<b>Duplicate</b> it to explore changes, or press <b>Unlock this scenario</b> to open it up for everyone."
@@ -1858,7 +1860,7 @@ function paintSaver(){
   const lock=BUSY; /* scenarios can be managed with or without a runtime */
   saveBtn.disabled=lock||locked||!sc||!dirty;
   saveBtn.textContent=BUSY?"Saving…":"Save";
-  saveBtn.title=locked?"The district original can't be overwritten — use Duplicate":
+  saveBtn.title=locked?"A locked scenario can't be overwritten — use Duplicate":
     (!dirty&&sc?"Nothing has changed yet":"Save this scenario for everyone");
   document.getElementById("saveas").disabled=lock;
   document.getElementById("rename").disabled=lock||locked||!sc;
@@ -2404,21 +2406,15 @@ document.getElementById("foot").innerHTML=
    <b>Comprehensive Improvement Plan – Timeline</b> spreadsheet, carrying that sheet's cost, completion date,
    priority and funding source. Operating items — staffing, programs, curriculum, the marketing position — are
    General Fund, not capital, and are not shown. Where the sheet says <b>TBD</b> or gives a range, the figure here
-   is a planning estimate tagged <span style="color:var(--boost);font-weight:700">est</span>. The sheet's three
-   <b>10-Year Goals</b> (indoor athletic space, fine arts, secure entrances) are all priced TBD there, so they sit
-   in FY2036 at $0 — visible and unpriced beats invisible. <b>Two new vans</b> is read as $67,500 <i>per</i> van
-   for Summer 2027 and Summer 2029; if the sheet's $60–75k was the total for both, halve each phase.
-   <b>Scenarios.</b> <b>District original (spreadsheet)</b> 🔒 is locked: it reproduces the sheet exactly, without
-   the roof program, and nothing in the interface can change it — press <b>Duplicate</b> to explore from it. Save
-   as many other scenarios as you like and switch between them from the rail. <b>Compare</b> puts them side by side
-   on total need, levy-funded amount and gap to close. The one marked ⌂ is the <b>landing view</b>: what a board
-   member sees when they open this page.
+   is a planning estimate tagged <span style="color:var(--boost);font-weight:700">est</span>.
+   <b>Scenarios.</b> Locked scenarios can be cloned and updated from but not changed. The one marked ⌂ is the
+   <b>landing view</b>: what a viewer sees when they open this page.
    <b>Projects.</b> Click a project's name to rename it, <b>×</b> to delete it (press twice), or
    <b>+ New project</b> at the foot of a year to add one. Changes belong to the scenario you're in.
    <b>Sharing.</b> Anyone you send the link to gets the whole tool: they can drag projects, change costs, phase
    things, re-fund them and move every slider, and the meters and gap recalculate as they go. What they cannot do
    is <i>save</i> — their version lives in their browser, is invisible to everyone else, and resets when they close
-   the tab. So a board member can sit with this and test their own idea without any risk of altering the plan. Only
+   the tab. So a viewer can sit with this and test their own idea without any risk of altering the plan. Only
    the owner's saves change what the rest of us see. If two editors save at once the later save is refused, the page
    reloads to the version that won, and the refused edits are offered back.
    <b>Bond Proceeds</b> is the remainder of the previously passed GO bond, held in the Capital Projects fund — money
@@ -2430,29 +2426,15 @@ document.getElementById("foot").innerHTML=
    collection window; if the board would renew it, that is a decision to make explicitly, not a default here.
    <b>Phases.</b> <b>+ phase</b> splits a project in two, moving half the money to the next open year; give each
    phase its own amount and its own funding mix. <b>− phase</b> folds a phase's money back into the one before it,
-   so the project total never changes by accident. The playground is entered as a single line even though the
-   district describes it as a 4-year plan — phase it once you have the per-year figures.
-   <b>Roof Replacement Program</b> is <i>not</i> in the district CIP Timeline. It comes from the Elevate Roofing
-   report of 10 July 2026, which puts five of the fifteen roof sections at end of life inside this window:
-   Section 12 (1–2 yrs) and Sections 8 and 11 (1–3 yrs), Section 5 (2–3 yrs), Section 6 (3–5 yrs). The other ten
-   sections have 20+ years. The three phases group them by urgency and by what makes a sensible bid package —
-   FY2028: Sections 12 + 8; FY2029: Sections 11 + 5; FY2031: Section 6. <b>The dollar figures are the weakest
-   numbers on this page.</b> The report gives no square footage, so areas were scaled off its section map
-   (~55,000 sf across the five, ±20%) and priced at ~$14/sf all-in for an Iowa public-school reroof — tear-off,
-   R-25 insulation, membrane, edge metal, bid and design fees, contingency. Ask Elevate for measured section
-   areas; that one number turns a ±35% range into a ±10% one.
+   so the project total never changes by accident.
    <b>Inflation</b> is off by default so the costs here match the CIP document. The district analysis assumes ~4%/yr
    construction inflation; with the lever on, each phase shows what it costs in the year it lands.
-   <b>Funding sources</b> default to what the district CIP Timeline names for each project (★). Because every item
-   here is capital — buildings, site work, grounds, equipment — SAVE, PPEL, V-PPEL, and Campaign/Bond are all
-   legally eligible everywhere; the one hard Iowa rule (no salaries on PPEL or SAVE) doesn't apply, since positions
-   and programs (FFA, art, STEM startup) are General-Fund operating and aren't in this capital view. A ⚠ flags soft
-   money (grants, boosters, campaign) used off its usual purpose.
+   <b>Funding sources</b> default to what the district CIP Timeline names for each project (★).
    <b>Meters</b> start with each levy's balance, add that year's net inflow (SAVE income less debt service — which
    ends after FY2030 — less $175k ongoing; PPEL grown at the slider less $20k) and bank the rest forward.
    <b>Estimates</b> tagged <span style="color:var(--boost);font-weight:700">est</span> are timeline TBDs (±30–50%).
-   Vehicles and salaries are funded outside this capital view. Confirm eligibility and any soft-money assumption
-   with the business manager before the board leans on a scenario.`;
+   Confirm eligibility and any dollar assumption with the business manager before decisions are made.
+   <div class="stamp">Planner build <b>2026-09-01c</b></div>`;
 
 syncLevers();
 render();
