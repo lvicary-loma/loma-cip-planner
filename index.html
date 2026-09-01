@@ -1875,12 +1875,17 @@ const SB={on:false,url:SUPABASE_URL,key:SUPABASE_KEY,row:SUPABASE_ROW,
   token:null,email:null,stamp:null,force:false,note:"",checked:false};
 const TOKEN_KEY="loma-sb-token";
 const sbConfigured=()=>!!(SB.url&&SB.key&&/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(SB.url));
-const sbHead=(auth)=>({apikey:SB.key,Authorization:"Bearer "+(auth||SB.key),"Content-Type":"application/json"});
+/* Publishable keys go on the apikey header ONLY — they are not JWTs, and the
+   gateway rejects one sent as a Bearer token. Authorization carries a real
+   user access token, or nothing at all. */
+const sbHead=(userJwt)=>{const h={apikey:SB.key,"Content-Type":"application/json"};
+  if(userJwt)h.Authorization="Bearer "+userJwt;
+  return h;};
 
 async function sbRead(){
   const r=await fetch(SB.url+"/rest/v1/plan?id=eq."+encodeURIComponent(SB.row)+"&select=doc,updated_at",
     {headers:sbHead(),cache:"no-store"});
-  if(!r.ok)throw new Error("read "+r.status);
+  if(!r.ok)throw new Error("HTTP "+r.status+" "+(await r.text()).slice(0,120));
   return (await r.json())[0]||null;
 }
 async function sbWrite(doc){
@@ -1927,7 +1932,7 @@ async function sbBoot(){
     }else{SB.stamp=row?row.updated_at:null;SB.note="The shared plan is empty — the first save will fill it.";}
   }catch(e){
     SB.on=false;
-    SB.note="Can't reach the shared plan right now, so this is the copy built into this page. "+
+    SB.note="Can't reach the shared plan ("+((e&&e.message)||e)+"), so this is the copy built into this page. "+
       "Everything works; saves stay on your machine. (A free Supabase project pauses after about a week idle — resuming it in the dashboard fixes this.)";
   }
   if(tok&&SB.on){
