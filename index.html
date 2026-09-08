@@ -13,7 +13,7 @@
   :root{
     --paper:#FAFAF6; --panel:#FFFFFF; --ink:#1B1A24; --muted:#6A6875;
     --line:#E4E1D8; --line2:#D6D2C6;
-    --save:#4F2170; --ppel:#1F6F6F; --vppel:#8A5FBF; --grants:#9A7400; --bondp:#2C5F8A;
+    --save:#4F2170; --ppel:#1F6F6F; --vppel:#8A5FBF; --grants:#9A7400;
     --boost:#C97A16; --camp:#B23A3A;
     --ok:#2E7D46; --warn:#B23A3A; --bank:#3A6B8A; --gold:#C9A227;
     --disp:'Barlow Semi Condensed','Arial Narrow',system-ui,sans-serif;
@@ -253,11 +253,11 @@
      "id": 1,
      "phases": [
       {
-       "cost": 700000,
+       "cost": 613000,
        "year": 0,
        "funding": [
         {
-         "b": "bondp",
+         "b": "save",
          "p": 100
         }
        ]
@@ -556,11 +556,11 @@
      "id": 1,
      "phases": [
       {
-       "cost": 700000,
+       "cost": 613000,
        "year": 0,
        "funding": [
         {
-         "b": "bondp",
+         "b": "save",
          "p": 100
         }
        ]
@@ -916,11 +916,11 @@
      "id": 1,
      "phases": [
       {
-       "cost": 700000,
+       "cost": 613000,
        "year": 0,
        "funding": [
         {
-         "b": "bondp",
+         "b": "save",
          "p": 100
         }
        ]
@@ -1290,9 +1290,8 @@ const SUPABASE_ROW = "loma";
 const N=10;
 /* Bond proceeds: the remainder of the previously passed GO bond, held in the
    Capital Projects fund. Money already in hand — no annual inflow. The opening
-   figure here is set to the science remodel and needs confirming: the FY2025-26
-   certified budget shows $4,050,000 in Capital Projects. */
-const OPEN={save:1663074,ppel:155000,vppel:0,grants:0,bondp:700000};
+   SAVE opens at the district's 1 July 2026 balance. */
+const OPEN={save:1582458,ppel:155000,vppel:0,grants:0};
 const SAVE_INC=725000,SAVE_DEBT=357000,SAVE_ONG=175000;
 const PPEL_INC=91000,PPEL_ONG=20000;
 const VPPEL_ANNUAL=364000,VPPEL_FIRST=1,VPPEL_LAST=4,GRANT_AVG=140000;
@@ -1302,12 +1301,15 @@ const BUCKETS={
   save:{name:"SAVE",color:"var(--save)"},
   ppel:{name:"PPEL",color:"var(--ppel)"},
   vppel:{name:"V-PPEL",color:"var(--vppel)"},
-  bondp:{name:"Bond Proceeds",color:"var(--bondp)"},
   grants:{name:"Grants/Donations",color:"var(--grants)"},
   boost:{name:"Boosters",color:"var(--boost)"},
   camp:{name:"Campaign/Bond",color:"var(--camp)"},
 };
-const CAP_ORDER=["save","ppel","vppel","bondp","grants"];
+const CAP_ORDER=["save","ppel","vppel","grants"];
+/* Bond Proceeds existed for one project. That project is funded from SAVE now,
+   so the bucket is gone — but plans saved while it existed are still out there,
+   and their funding is moved across rather than quietly dropped. */
+const BUCKET_ALIAS={bondp:"save"};
 const SOFT=["grants","boost","camp"];
 const one=(cost,year,b)=>[{cost:cost,year:year,funding:[{b:b,p:100}]}];
 /* Every row below is a capital item from the district's "Comprehensive Improvement
@@ -1316,7 +1318,9 @@ const one=(cost,year,b)=>[{cost:cost,year:year,funding:[{b:b,p:100}]}];
    a planning estimate. Operating items (staffing, programs, curriculum) are not
    here — they are General Fund, not capital. */
 const DEFAULT_PROJECTS=[
-  {id:1,name:"Remodel Secondary Science Classrooms",pri:"High",rec:["bondp","save","ppel"],phases:one(700000,0,"bondp")},
+  /* $842,000 total; $230,000 was spent before 1 July 2026, so only the $613,000
+     remainder falls inside this ten-year window. */
+  {id:1,name:"Remodel Secondary Science Classrooms (remainder)",pri:"High",rec:["save","ppel"],phases:one(613000,0,"save")},
   {id:2,name:"Renovate Level 3 SpEd Classroom Space",pri:"High",est:true,rec:["save","ppel","vppel"],phases:one(145000,0,"save")},
   {id:3,name:"Construct Greenhouse",pri:"Med",rec:["grants","save"],phases:one(5000,0,"grants")},
   {id:4,name:"Install Updated Entry Systems",pri:"High",est:true,rec:["save","ppel","grants"],phases:one(60000,1,"save")},
@@ -1374,7 +1378,13 @@ const scById=id=>DOC.scenarios.find(s=>s.id===id)||null;
    added to the baseline later still appear in older scenarios. */
 function cleanPhases(raw){
   return raw.map(ph=>{
-    let f=Array.isArray(ph.funding)?ph.funding.filter(x=>x&&BUCKETS[x.b]).map(x=>({b:x.b,p:Number(x.p)||0})).slice(0,3):[];
+    let f=Array.isArray(ph.funding)
+      ?ph.funding.map(x=>x&&{b:BUCKET_ALIAS[x.b]||x.b,p:Number(x.p)||0})
+        .filter(x=>x&&BUCKETS[x.b]):[];
+    /* aliasing can leave two rows on the same bucket — fold them together */
+    const merged=[];f.forEach(x=>{const hit=merged.find(m=>m.b===x.b);
+      if(hit)hit.p+=x.p; else merged.push(x);});
+    f=merged.slice(0,3);
     if(!f.length)f=[{b:"save",p:100}];
     const tot=f.reduce((a,x)=>a+x.p,0);if(tot!==100&&tot>0)f.forEach(x=>x.p=Math.round(x.p/tot*100));
     return {cost:Math.max(0,Number(ph.cost)||0),year:Math.max(0,Math.min(N-1,Number(ph.year)||0)),funding:f};
@@ -1417,6 +1427,9 @@ function loadInto(sc){PROJECTS=hydrate(sc?sc.projects:null);S=leversOf(sc?sc.lev
 loadInto(scById(viewId));
 
 /* ================= math (pure) ================= */
+/* the meters abbreviate to stay readable; hovering gives the exact figure, so a
+   balance quoted to the dollar can be checked against what's on screen */
+const fmtExact=n=>(n<0?"-$":"$")+Math.round(Math.abs(n)).toLocaleString();
 const fmtK=n=>{const s=n<0?"-":"";n=Math.abs(n);
   if(n>=1e6)return s+"$"+(n/1e6).toFixed(2)+"M";
   if(n>=1000)return s+"$"+Math.round(n/1000)+"k";return s+"$"+Math.round(n);};
@@ -2341,15 +2354,14 @@ function render(){
     for(const b of CAP_ORDER){
       if(b==="vppel"&&!S.vppel)continue;
       /* a spent-out one-off pot (bond proceeds) stops taking up space */
-      if(b==="bondp"&&C.res[y].avail[b]<=0&&C.res[y].spend[b]<=0)continue;
       const m=C.res[y],av=m.avail[b],sp=m.spend[b],over=m.over[b];
       const pct=av>0?Math.min(100,sp/av*100):(sp>0?100:0);
       h+=`<div class="mt">
         <div class="mrow"><span class="mname" style="color:${BUCKETS[b].color}">${BUCKETS[b].name}</span>
-          <span class="mfig">${fmtK(sp)} / ${fmtK(av)}</span></div>
+          <span class="mfig" title="${YEARS[y].fy}: ${fmtExact(av)} available — ${fmtExact(m.carryIn[b])} carried in on 1 July ${2026+y}, plus ${fmtExact(inflow(b,y,S))} of ${BUCKETS[b].name} receipts during the year. ${fmtExact(sp)} committed.">${fmtK(sp)} / ${fmtK(av)}</span></div>
         <div class="bar ${over>0?'over':''}"><span style="width:${pct}%;background:${BUCKETS[b].color}"></span></div>
         ${over>0?`<div class="carry" style="color:var(--warn)">Over by ${fmtK(over)} — move a phase, split it, or lever up</div>`
-          :`<div class="carry">carry-in ${fmtK(m.carryIn[b])} + ${fmtK(inflow(b,y,S))} → banks ${fmtK(av-sp)}</div>`}
+          :`<div class="carry" title="carry-in ${fmtExact(m.carryIn[b])} + ${fmtExact(inflow(b,y,S))} this year = ${fmtExact(av)} available; ${fmtExact(sp)} committed, ${fmtExact(av-sp)} banks forward">carry-in ${fmtK(m.carryIn[b])} + ${fmtK(inflow(b,y,S))} → banks ${fmtK(av-sp)}</div>`}
       </div>`;
     }
     const ext=C.res[y].ext;
@@ -2482,10 +2494,9 @@ document.getElementById("foot").innerHTML=
    the tab. So a viewer can sit with this and test their own idea without any risk of altering the plan. Only
    the owner's saves change what the rest of us see. If two editors save at once the later save is refused, the page
    reloads to the version that won, and the refused edits are offered back.
-   <b>Bond Proceeds</b> is the remainder of the previously passed GO bond, held in the Capital Projects fund — money
-   already in hand, so it takes no annual inflow and simply runs down. The science remodel is funded from it. The
-   opening balance is set to $700,000 to match that project and <b>needs confirming</b>: the FY2025-26 certified
-   budget shows $4,050,000 in Capital Projects, and the two figures have to be reconciled with the business manager.
+   <b>The science remodel</b> is a $842,000 project of which $230,000 was spent before 1 July 2026. Only the
+   $613,000 remainder is shown here, funded from SAVE — money already spent is not a call on future capacity.
+   <b>SAVE</b> opens at its 1 July 2026 balance of $1,582,458.
    <b>Ten years.</b> FY2027–FY2036. Years with nothing in them collapse to a strip showing what that year banks —
    click one, or drop a project on it, to open it. <b>V-PPEL</b> is modelled only for its stated FY2028–FY2031
    collection window; if the board would renew it, that is a decision to make explicitly, not a default here.
@@ -2495,11 +2506,14 @@ document.getElementById("foot").innerHTML=
    <b>Inflation</b> is off by default so the costs here match the CIP document. The district analysis assumes ~4%/yr
    construction inflation; with the lever on, each phase shows what it costs in the year it lands.
    <b>Funding sources</b> default to what the district CIP Timeline names for each project (★).
-   <b>Meters</b> start with each levy's balance, add that year's net inflow (SAVE income less debt service — which
-   ends after FY2030 — less $175k ongoing; PPEL grown at the slider less $20k) and bank the rest forward.
+   <b>Meters</b> show <i>spent / available in that year</i>, not the balance on 1 July. Available = the balance
+   carried in plus that year's net receipts, which is why FY2027 SAVE reads $1.78M: $1,582,458 carried in on
+   1 July 2026 plus $193,000 collected during FY2027 ($725,000 income, less $357,000 debt service — which ends
+   after FY2030 — less $175,000 ongoing). PPEL grows at the slider less $20,000. Whatever is left banks forward.
+   Hover any meter for the exact dollars behind the rounded figures.
    <b>Estimates</b> tagged <span style="color:var(--boost);font-weight:700">est</span> are timeline TBDs (±30–50%).
    Confirm eligibility and any dollar assumption with the business manager before decisions are made.
-   <div class="stamp">Planner build <b>2026-09-01d</b></div>`;
+   <div class="stamp">Planner build <b>2026-09-03a</b></div>`;
 
 syncLevers();
 render();
